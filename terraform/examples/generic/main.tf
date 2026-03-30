@@ -16,14 +16,17 @@ terraform {
 module "bgp" {
   source = "../../modules/bgp-anycast"
 
-  enable_bgp     = var.enable_bgp
-  bgp_daemon     = var.bgp_daemon
-  anycast_prefix = var.anycast_prefix
-  anycast_vip    = var.anycast_vip
-  bgp_local_as   = var.bgp_local_as
-  bgp_peer_as    = var.bgp_peer_as
-  bgp_peer_ip    = var.bgp_peer_ip
-  bgp_password   = var.bgp_password
+  enable_bgp      = var.enable_bgp
+  bgp_daemon      = var.bgp_daemon
+  anycast_prefix  = var.anycast_prefix
+  anycast_vip     = var.anycast_vip
+  anycast_prefix6 = var.anycast_prefix6
+  anycast_vip6    = var.anycast_vip6
+  bgp_local_as    = var.bgp_local_as
+  bgp_peer_as     = var.bgp_peer_as
+  bgp_peer_ip     = var.bgp_peer_ip
+  bgp_peer_ip6    = var.bgp_peer_ip6
+  bgp_password    = var.bgp_password
 }
 
 # Provision each host via Ansible
@@ -39,12 +42,13 @@ module "ingress_nodes" {
   egress_mode  = var.egress_mode
   egress_iface = var.egress_iface
 
-  gre_local_ip   = each.value.gre_local_ip
-  gre_remote_ip  = var.gre_remote_ip
+  gre_local_ip6  = each.value.gre_local_ip6
+  gre_remote_ip6 = var.gre_remote_ip6
   gre_inner_ipv6 = each.value.gre_inner_ipv6
 
   enable_bgp    = var.enable_bgp
   bgp_peer_ip   = each.value.bgp_peer_ip != "" ? each.value.bgp_peer_ip : var.bgp_peer_ip
+  bgp_peer_ip6  = each.value.bgp_peer_ip6 != "" ? each.value.bgp_peer_ip6 : var.bgp_peer_ip6
   bgp_router_id = each.value.public_ip
 
   extra_ansible_vars = module.bgp.bgp_vars

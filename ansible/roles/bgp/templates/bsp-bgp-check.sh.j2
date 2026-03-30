@@ -1,22 +1,31 @@
 #!/bin/sh
-# BGP health-check for bitcoin-shard-proxy
+# BGP health-check for bitcoin-shard-proxy — dual-stack
 # Managed by Ansible — do not edit manually
 #
-# Withdraws BGP route if the proxy health endpoint is unhealthy.
+# Withdraws BGP routes (IPv4 and IPv6) if the proxy health endpoint is unhealthy.
 
-HEALTH_URL="http://127.0.0.1{{ metrics_addr | regex_replace('^:','127.0.0.1:') | regex_replace('^127\\.0\\.0\\.1127\\.0\\.0\\.1','http://127.0.0.1') }}/healthz"
-HEALTH_URL="http://127.0.0.1:{{ metrics_addr | regex_replace('^:','') | default('9100') }}/healthz"
+HEALTH_URL="http://127.0.0.1:{{ metrics_addr | regex_replace('^:', '') | default('9100') }}/healthz"
 
 if curl -sf --max-time 3 "${HEALTH_URL}" > /dev/null 2>&1; then
 {% if bgp_daemon == 'bird2' %}
-  birdc 'show protocols bgp upstream' > /dev/null 2>&1 || true
+  birdc 'show protocols' > /dev/null 2>&1 || true
 {% else %}
   vtysh -c 'show bgp summary' > /dev/null 2>&1 || true
 {% endif %}
 else
 {% if bgp_daemon == 'bird2' %}
-  birdc 'disable protocol bgp upstream' > /dev/null 2>&1 || true
+{% if bgp_peer_ip | length > 0 %}
+  birdc 'disable protocol upstream4' > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+  birdc 'disable protocol upstream6' > /dev/null 2>&1 || true
+{% endif %}
 {% else %}
+{% if bgp_peer_ip | length > 0 %}
   vtysh -c 'clear ip bgp {{ bgp_peer_ip }} soft out' > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+  vtysh -c 'clear bgp ipv6 {{ bgp_peer_ip6 }} soft out' > /dev/null 2>&1 || true
+{% endif %}
 {% endif %}
 fi

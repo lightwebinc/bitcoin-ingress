@@ -42,9 +42,10 @@ data "aws_ami" "ubuntu_24_04" {
 # VPC and networking
 # ---------------------------------------------------------------
 resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+  cidr_block                       = var.vpc_cidr
+  enable_dns_hostnames             = true
+  enable_dns_support               = true
+  assign_generated_ipv6_cidr_block = true
 
   tags = merge(local.common_tags, { Name = "${var.name_prefix}-vpc" })
 }
@@ -55,11 +56,13 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = length(var.availability_zones)
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 4, count.index)
-  availability_zone       = var.availability_zones[count.index]
-  map_public_ip_on_launch = true
+  count                           = length(var.availability_zones)
+  vpc_id                          = aws_vpc.main.id
+  cidr_block                      = cidrsubnet(var.vpc_cidr, 4, count.index)
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index)
+  availability_zone               = var.availability_zones[count.index]
+  map_public_ip_on_launch         = true
+  assign_ipv6_address_on_creation = true
 
   tags = merge(local.common_tags, { Name = "${var.name_prefix}-public-${count.index}" })
 }
@@ -94,11 +97,20 @@ resource "aws_security_group" "ingress_node" {
 
 resource "aws_vpc_security_group_ingress_rule" "bsv_udp" {
   security_group_id = aws_security_group.ingress_node.id
-  description       = "BSV ingress UDP"
+  description       = "BSV ingress UDP (IPv4)"
   from_port         = var.listen_port
   to_port           = var.listen_port
   ip_protocol       = "udp"
   cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "bsv_udp6" {
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "BSV ingress UDP (IPv6)"
+  from_port         = var.listen_port
+  to_port           = var.listen_port
+  ip_protocol       = "udp"
+  cidr_ipv6         = "::/0"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
@@ -123,22 +135,40 @@ resource "aws_vpc_security_group_ingress_rule" "metrics" {
   cidr_ipv4         = each.value
 }
 
-resource "aws_vpc_security_group_ingress_rule" "bgp" {
-  count = var.enable_bgp ? 1 : 0
+resource "aws_vpc_security_group_ingress_rule" "bgp4" {
+  count = var.enable_bgp && var.bgp_peer_ip != "" ? 1 : 0
 
   security_group_id = aws_security_group.ingress_node.id
-  description       = "BGP"
+  description       = "BGP (IPv4)"
   from_port         = 179
   to_port           = 179
   ip_protocol       = "tcp"
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "bgp6" {
+  count = var.enable_bgp && var.bgp_peer_ip6 != "" ? 1 : 0
+
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "BGP (IPv6)"
+  from_port         = 179
+  to_port           = 179
+  ip_protocol       = "tcp"
+  cidr_ipv6         = "::/0"
+}
+
 resource "aws_vpc_security_group_egress_rule" "all" {
   security_group_id = aws_security_group.ingress_node.id
-  description       = "Allow all outbound"
+  description       = "Allow all outbound (IPv4)"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all6" {
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "Allow all outbound (IPv6)"
+  ip_protocol       = "-1"
+  cidr_ipv6         = "::/0"
 }
 
 # ---------------------------------------------------------------
@@ -199,14 +229,17 @@ locals {
 module "bgp" {
   source = "../../modules/bgp-anycast"
 
-  enable_bgp     = var.enable_bgp
-  bgp_daemon     = var.bgp_daemon
-  anycast_prefix = var.anycast_prefix
-  anycast_vip    = var.anycast_vip
-  bgp_local_as   = var.bgp_local_as
-  bgp_peer_as    = var.bgp_peer_as
-  bgp_peer_ip    = var.bgp_peer_ip
-  bgp_password   = var.bgp_password
+  enable_bgp      = var.enable_bgp
+  bgp_daemon      = var.bgp_daemon
+  anycast_prefix  = var.anycast_prefix
+  anycast_vip     = var.anycast_vip
+  anycast_prefix6 = var.anycast_prefix6
+  anycast_vip6    = var.anycast_vip6
+  bgp_local_as    = var.bgp_local_as
+  bgp_peer_as     = var.bgp_peer_as
+  bgp_peer_ip     = var.bgp_peer_ip
+  bgp_peer_ip6    = var.bgp_peer_ip6
+  bgp_password    = var.bgp_password
 }
 
 # ---------------------------------------------------------------
@@ -224,12 +257,13 @@ module "ingress_nodes" {
   egress_mode  = var.egress_mode
   egress_iface = var.egress_iface
 
-  gre_remote_ip  = var.gre_remote_ip
-  gre_local_ip   = local.node_ips[count.index]
+  gre_remote_ip6 = var.gre_remote_ip6
+  gre_local_ip6  = local.node_ips[count.index]
   gre_inner_ipv6 = ""
 
   enable_bgp    = var.enable_bgp
   bgp_peer_ip   = var.bgp_peer_ip
+  bgp_peer_ip6  = var.bgp_peer_ip6
   bgp_router_id = local.node_ips[count.index]
 
   extra_ansible_vars = module.bgp.bgp_vars

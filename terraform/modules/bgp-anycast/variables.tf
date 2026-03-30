@@ -16,13 +16,25 @@ variable "bgp_daemon" {
 }
 
 variable "anycast_prefix" {
-  description = "Shared prefix announced by all nodes (e.g. '192.0.2.0/24')"
+  description = "IPv4 shared prefix announced by all nodes (e.g. '192.0.2.0/24')"
   type        = string
   default     = ""
 }
 
 variable "anycast_vip" {
-  description = "Loopback VIP from the anycast prefix (e.g. '192.0.2.1')"
+  description = "IPv4 loopback VIP from the anycast prefix (e.g. '192.0.2.1')"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_prefix6" {
+  description = "IPv6 shared prefix announced by all nodes (e.g. '2001:db8::/48')"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_vip6" {
+  description = "IPv6 loopback VIP from the anycast_prefix6 (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }
@@ -40,7 +52,13 @@ variable "bgp_peer_as" {
 }
 
 variable "bgp_peer_ip" {
-  description = "Upstream BGP peer IP"
+  description = "Upstream BGP peer IPv4 address (leave empty for IPv6-only peer)"
+  type        = string
+  default     = ""
+}
+
+variable "bgp_peer_ip6" {
+  description = "Upstream BGP peer IPv6 address"
   type        = string
   default     = ""
 }

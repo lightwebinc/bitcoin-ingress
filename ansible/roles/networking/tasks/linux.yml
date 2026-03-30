@@ -1,5 +1,5 @@
 ---
-- name: Enable IPv6 forwarding via sysctl
+- name: Enable IPv4/IPv6 forwarding via sysctl
   ansible.posix.sysctl:
     name: "{{ item }}"
     value: "1"
@@ -7,6 +7,7 @@
     sysctl_file: /etc/sysctl.d/60-bitcoin-ingress.conf
     reload: true
   loop:
+    - net.ipv4.ip_forward
     - net.ipv6.conf.all.forwarding
     - net.ipv6.conf.all.mc_forwarding
 
@@ -37,5 +38,5 @@
     owner: root
     group: root
     mode: "0600"
-  when: enable_bgp | bool and anycast_vip | length > 0
+  when: enable_bgp | bool and (anycast_vip | length > 0 or anycast_vip6 | length > 0)
   notify: Apply netplan

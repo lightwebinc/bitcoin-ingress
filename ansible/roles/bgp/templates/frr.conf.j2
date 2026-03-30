@@ -1,27 +1,57 @@
-! FRR configuration for bitcoin-ingress AnyCast
+! FRR configuration for bitcoin-ingress AnyCast — dual-stack
 ! Managed by Ansible — do not edit manually
+! Ingress: dual-stack (IPv4 + IPv6)
+! Fabric/egress: IPv6-only
 !
 frr defaults traditional
 log syslog informational
 !
 router bgp {{ bgp_local_as }}
  bgp router-id {{ bgp_router_id }}
+{% if bgp_peer_ip | length > 0 %}
  neighbor {{ bgp_peer_ip }} remote-as {{ bgp_peer_as }}
  neighbor {{ bgp_peer_ip }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
 {% if bgp_password | length > 0 %}
  neighbor {{ bgp_peer_ip }} password {{ bgp_password }}
 {% endif %}
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+ neighbor {{ bgp_peer_ip6 }} remote-as {{ bgp_peer_as }}
+ neighbor {{ bgp_peer_ip6 }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
+{% if bgp_password | length > 0 %}
+ neighbor {{ bgp_peer_ip6 }} password {{ bgp_password }}
+{% endif %}
+{% endif %}
+{% if bgp_peer_ip | length > 0 and anycast_prefix | length > 0 %}
  !
  address-family ipv4 unicast
   network {{ anycast_prefix }}
-  neighbor {{ bgp_peer_ip }} route-map EXPORT out
+  neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
   neighbor {{ bgp_peer_ip }} route-map DENY in
  exit-address-family
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 and anycast_prefix6 | length > 0 %}
+ !
+ address-family ipv6 unicast
+  network {{ anycast_prefix6 }}
+  neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
+  neighbor {{ bgp_peer_ip6 }} route-map DENY in
+ exit-address-family
+{% endif %}
 !
-ip prefix-list ANYCAST seq 10 permit {{ anycast_prefix }}
+{% if anycast_prefix | length > 0 %}
+ip prefix-list ANYCAST4 seq 10 permit {{ anycast_prefix }}
 !
-route-map EXPORT permit 10
- match ip address prefix-list ANYCAST
+route-map EXPORT4 permit 10
+ match ip address prefix-list ANYCAST4
 !
+{% endif %}
+{% if anycast_prefix6 | length > 0 %}
+ipv6 prefix-list ANYCAST6 seq 10 permit {{ anycast_prefix6 }}
+!
+route-map EXPORT6 permit 10
+ match ipv6 address prefix-list ANYCAST6
+!
+{% endif %}
 route-map DENY deny 10
 !

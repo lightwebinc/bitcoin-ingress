@@ -1,8 +1,10 @@
 # Managed by Ansible (bitcoin-ingress) — do not edit manually
+# Ingress interface: dual-stack (IPv4 + IPv6)
+# Egress/fabric: IPv6-only (see netplan-gre.yaml.j2 for tunnel config)
 network:
   version: 2
   ethernets:
     {{ egress_iface if egress_iface is string else egress_iface[0] }}:
-      dhcp4: false
+      dhcp4: true
       dhcp6: true
       accept-ra: true

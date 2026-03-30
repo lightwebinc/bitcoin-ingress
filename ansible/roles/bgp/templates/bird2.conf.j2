@@ -1,5 +1,7 @@
-# BIRD2 configuration for bitcoin-ingress AnyCast
+# BIRD2 configuration for bitcoin-ingress AnyCast — dual-stack
 # Managed by Ansible — do not edit manually
+# Ingress: dual-stack (IPv4 + IPv6)
+# Fabric/egress: IPv6-only
 
 router id {{ bgp_router_id }};
 
@@ -19,12 +21,22 @@ protocol kernel {
   };
 }
 
-protocol static anycast_routes {
+{% if anycast_prefix | length > 0 %}
+protocol static anycast4 {
   ipv4;
   route {{ anycast_prefix }} blackhole;
 }
+{% endif %}
 
-protocol bgp upstream {
+{% if anycast_prefix6 | length > 0 %}
+protocol static anycast6 {
+  ipv6;
+  route {{ anycast_prefix6 }} blackhole;
+}
+{% endif %}
+
+{% if bgp_peer_ip | length > 0 %}
+protocol bgp upstream4 {
   local as {{ bgp_local_as }};
   neighbor {{ bgp_peer_ip }} as {{ bgp_peer_as }};
   hold time {{ bgp_hold_time }};
@@ -36,8 +48,33 @@ protocol bgp upstream {
   ipv4 {
     import none;
     export filter {
-      if proto = "anycast_routes" then accept;
+{% if anycast_prefix | length > 0 %}
+      if proto = "anycast4" then accept;
+{% endif %}
       reject;
     };
   };
 }
+{% endif %}
+
+{% if bgp_peer_ip6 | length > 0 %}
+protocol bgp upstream6 {
+  local as {{ bgp_local_as }};
+  neighbor {{ bgp_peer_ip6 }} as {{ bgp_peer_as }};
+  hold time {{ bgp_hold_time }};
+  keepalive time {{ bgp_keepalive }};
+{% if bgp_password | length > 0 %}
+  password "{{ bgp_password }}";
+{% endif %}
+
+  ipv6 {
+    import none;
+    export filter {
+{% if anycast_prefix6 | length > 0 %}
+      if proto = "anycast6" then accept;
+{% endif %}
+      reject;
+    };
+  };
+}
+{% endif %}

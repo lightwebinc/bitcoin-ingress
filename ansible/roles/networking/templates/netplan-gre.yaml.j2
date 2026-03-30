@@ -1,10 +1,11 @@
 # Managed by Ansible (bitcoin-ingress) — do not edit manually
+# Fabric is IPv6-only: GRE tunnel runs over IPv6 (ip6gre)
 network:
   version: 2
   tunnels:
     {{ gre_iface }}:
-      mode: gre
-      local: "{{ gre_local_ip }}"
-      remote: "{{ gre_remote_ip }}"
+      mode: ip6gre
+      local: "{{ gre_local_ip6 }}"
+      remote: "{{ gre_remote_ip6 }}"
       addresses:
         - "{{ gre_inner_ipv6 }}"

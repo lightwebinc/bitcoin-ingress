@@ -41,10 +41,12 @@ egress_mode: "ethernet"       # ethernet | gre
 egress_iface: "eth1"          # interface name or list of names
 
 # GRE tunnel (only used when egress_mode == gre)
-gre_local_ip: ""
-gre_remote_ip: ""
-gre_iface: "gre0"
-gre_inner_ipv6: ""
+# The fabric is IPv6-only: local/remote endpoints are IPv6 addresses,
+# the tunnel mode is ip6gre (Linux) / gif (FreeBSD).
+gre_local_ip6: ""         # IPv6 address of the local tunnel endpoint
+gre_remote_ip6: ""        # IPv6 address of the remote tunnel endpoint
+gre_iface: "gre6-bsp"     # interface name for the tunnel
+gre_inner_ipv6: ""        # IPv6 address/prefix assigned inside the tunnel
 
 # ------------------------------------------------------------
 # BGP / AnyCast (optional)
@@ -52,12 +54,15 @@ gre_inner_ipv6: ""
 enable_bgp: false
 bgp_daemon: "bird2"           # bird2 | frr
 
-anycast_prefix: ""            # e.g. "192.0.2.0/24"
-anycast_vip: ""               # e.g. "192.0.2.1"
+anycast_prefix: ""            # IPv4 anycast prefix, e.g. "192.0.2.0/24"
+anycast_vip: ""               # IPv4 VIP from prefix, e.g. "192.0.2.1"
+anycast_prefix6: ""           # IPv6 anycast prefix, e.g. "2001:db8::/48"
+anycast_vip6: ""              # IPv6 VIP from prefix6, e.g. "2001:db8::1"
 
 bgp_local_as: 65001
 bgp_peer_as: 65000
-bgp_peer_ip: ""
+bgp_peer_ip: ""               # IPv4 BGP peer address (leave empty if peer is v6-only)
+bgp_peer_ip6: ""              # IPv6 BGP peer address
 bgp_router_id: "{{ ansible_default_ipv4.address }}"
 bgp_hold_time: 90
 bgp_keepalive: 30

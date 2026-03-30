@@ -93,20 +93,20 @@ variable "egress_iface" {
   default     = "eth1"
 }
 
-variable "gre_local_ip" {
-  description = "Local IP for the GRE tunnel (egress_mode=gre only)"
+variable "gre_local_ip6" {
+  description = "Local IPv6 address for the ip6gre tunnel endpoint (egress_mode=gre only)"
   type        = string
   default     = ""
 }
 
-variable "gre_remote_ip" {
-  description = "Remote GRE endpoint IP (egress_mode=gre only)"
+variable "gre_remote_ip6" {
+  description = "Remote IPv6 address for the ip6gre tunnel endpoint (egress_mode=gre only)"
   type        = string
   default     = ""
 }
 
 variable "gre_inner_ipv6" {
-  description = "IPv6 address/prefix for the GRE tunnel interface"
+  description = "IPv6 address/prefix assigned to the tunnel interface"
   type        = string
   default     = ""
 }
@@ -130,13 +130,25 @@ variable "bgp_daemon" {
 }
 
 variable "anycast_prefix" {
-  description = "Shared anycast prefix announced by all nodes"
+  description = "IPv4 shared anycast prefix announced by all nodes"
   type        = string
   default     = ""
 }
 
 variable "anycast_vip" {
-  description = "Loopback VIP address from the anycast prefix"
+  description = "IPv4 loopback VIP from the anycast prefix"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_prefix6" {
+  description = "IPv6 shared anycast prefix announced by all nodes (e.g. '2001:db8::/48')"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_vip6" {
+  description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }
@@ -154,7 +166,13 @@ variable "bgp_peer_as" {
 }
 
 variable "bgp_peer_ip" {
-  description = "Upstream BGP peer IP address"
+  description = "Upstream BGP peer IPv4 address (leave empty for IPv6-only peer)"
+  type        = string
+  default     = ""
+}
+
+variable "bgp_peer_ip6" {
+  description = "Upstream BGP peer IPv6 address"
   type        = string
   default     = ""
 }

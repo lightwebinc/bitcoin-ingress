@@ -1,7 +1,13 @@
 # Managed by Ansible (bitcoin-ingress) — do not edit manually
+# AnyCast VIPs on loopback — dual-stack (IPv4 and/or IPv6)
 network:
   version: 2
   ethernets:
     lo:
       addresses:
+{% if anycast_vip | length > 0 %}
         - "{{ anycast_vip }}/32"
+{% endif %}
+{% if anycast_vip6 | length > 0 %}
+        - "{{ anycast_vip6 }}/128"
+{% endif %}
