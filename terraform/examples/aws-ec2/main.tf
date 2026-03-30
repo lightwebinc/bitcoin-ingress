@@ -1,17 +1,17 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.9"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0"
+      version = "~> 6.0"
     }
     local = {
       source  = "hashicorp/local"
-      version = ">= 2.4"
+      version = "~> 2.5"
     }
     null = {
       source  = "hashicorp/null"
-      version = ">= 3.2"
+      version = "~> 3.2"
     }
   }
 }
@@ -89,49 +89,63 @@ resource "aws_security_group" "ingress_node" {
   description = "bitcoin-ingress proxy node"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    description = "BSV ingress UDP"
-    from_port   = var.listen_port
-    to_port     = var.listen_port
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH management"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.ssh_allowed_cidrs
-  }
-
-  ingress {
-    description = "Prometheus metrics"
-    from_port   = 9100
-    to_port     = 9100
-    protocol    = "tcp"
-    cidr_blocks = var.metrics_allowed_cidrs
-  }
-
-  dynamic "ingress" {
-    for_each = var.enable_bgp ? [1] : []
-    content {
-      description = "BGP"
-      from_port   = 179
-      to_port     = 179
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = merge(local.common_tags, { Name = "${var.name_prefix}-sg" })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "bsv_udp" {
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "BSV ingress UDP"
+  from_port         = var.listen_port
+  to_port           = var.listen_port
+  ip_protocol       = "udp"
+  cidr_ipv4         = "0.0.0.0/0"
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  for_each          = toset(var.ssh_allowed_cidrs)
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "SSH management"
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "metrics" {
+  for_each          = toset(var.metrics_allowed_cidrs)
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "Prometheus metrics"
+  from_port         = 9100
+  to_port           = 9100
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "bgp" {
+  count             = var.enable_bgp ? 1 : 0
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "BGP"
+  from_port         = 179
+  to_port           = 179
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_security_group_egress_rule" "all" {
+  security_group_id = aws_security_group.ingress_node.id
+  description       = "Allow all outbound"
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+
+  tags = local.common_tags
 }
 
 # ---------------------------------------------------------------
@@ -159,13 +173,18 @@ resource "aws_instance" "ingress_node" {
 
 # Optional Elastic IPs (for AnyCast or stable inbound addressing)
 resource "aws_eip" "ingress_node" {
-  count    = var.allocate_eips ? var.instance_count : 0
-  instance = aws_instance.ingress_node[count.index].id
-  domain   = "vpc"
+  count  = var.allocate_eips ? var.instance_count : 0
+  domain = "vpc"
 
   tags = merge(local.common_tags, {
     Name = "${var.name_prefix}-eip-${count.index + 1}"
   })
+}
+
+resource "aws_eip_association" "ingress_node" {
+  count         = var.allocate_eips ? var.instance_count : 0
+  instance_id   = aws_instance.ingress_node[count.index].id
+  allocation_id = aws_eip.ingress_node[count.index].id
 }
 
 locals {

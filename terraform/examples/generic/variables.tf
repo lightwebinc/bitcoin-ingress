@@ -1,10 +1,13 @@
 variable "hosts" {
   description = "List of target hosts to provision"
   type = list(object({
-    name      = string
-    public_ip = string
-    ssh_user  = string
-    ssh_key   = string
+    name           = string
+    public_ip      = string
+    ssh_user       = string
+    ssh_key        = string
+    gre_local_ip   = optional(string, "")
+    gre_inner_ipv6 = optional(string, "")
+    bgp_peer_ip    = optional(string, "")
   }))
 }
 

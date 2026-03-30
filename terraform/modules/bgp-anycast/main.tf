@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.9"
 }
 
 # This module produces a map of BGP-related Ansible variables

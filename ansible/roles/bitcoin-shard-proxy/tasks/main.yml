@@ -101,7 +101,6 @@
     name: bitcoin-shard-proxy
     enabled: true
     state: started
-    daemon_reload: true
   when: ansible_os_family != 'FreeBSD'
 
 - name: Enable bitcoin-shard-proxy in rc.conf (FreeBSD)

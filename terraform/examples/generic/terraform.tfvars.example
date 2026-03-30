@@ -6,6 +6,9 @@ hosts = [
     public_ip = "203.0.113.10"
     ssh_user  = "ubuntu"
     ssh_key   = "~/.ssh/id_ed25519"
+    # gre_local_ip   = "203.0.113.10"
+    # gre_inner_ipv6 = "fd00::1/64"
+    # bgp_peer_ip    = "198.51.100.1"
   },
   {
     name      = "node-02"

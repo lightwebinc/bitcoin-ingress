@@ -1,13 +1,13 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.9"
   required_providers {
     local = {
       source  = "hashicorp/local"
-      version = ">= 2.4"
+      version = "~> 2.5"
     }
     null = {
       source  = "hashicorp/null"
-      version = ">= 3.2"
+      version = "~> 3.2"
     }
   }
 }
@@ -39,12 +39,12 @@ module "ingress_nodes" {
   egress_mode  = var.egress_mode
   egress_iface = var.egress_iface
 
-  gre_local_ip   = lookup(each.value, "gre_local_ip", "")
+  gre_local_ip   = each.value.gre_local_ip
   gre_remote_ip  = var.gre_remote_ip
-  gre_inner_ipv6 = lookup(each.value, "gre_inner_ipv6", "")
+  gre_inner_ipv6 = each.value.gre_inner_ipv6
 
-  enable_bgp  = var.enable_bgp
-  bgp_peer_ip = lookup(each.value, "bgp_peer_ip", var.bgp_peer_ip)
+  enable_bgp    = var.enable_bgp
+  bgp_peer_ip   = each.value.bgp_peer_ip != "" ? each.value.bgp_peer_ip : var.bgp_peer_ip
   bgp_router_id = each.value.public_ip
 
   extra_ansible_vars = module.bgp.bgp_vars
