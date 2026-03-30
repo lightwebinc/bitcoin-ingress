@@ -1,0 +1,8 @@
+# Managed by Ansible (bitcoin-ingress) — do not edit manually
+network:
+  version: 2
+  ethernets:
+    {{ egress_iface if egress_iface is string else egress_iface[0] }}:
+      dhcp4: false
+      dhcp6: true
+      accept-ra: true

@@ -1,0 +1,32 @@
+# Copy this file to terraform.tfvars and fill in your values.
+
+hosts = [
+  {
+    name      = "node-01"
+    public_ip = "203.0.113.10"
+    ssh_user  = "ubuntu"
+    ssh_key   = "~/.ssh/id_ed25519"
+  },
+  {
+    name      = "node-02"
+    public_ip = "198.51.100.20"
+    ssh_user  = "freebsd"
+    ssh_key   = "~/.ssh/id_ed25519"
+  },
+]
+
+shard_bits   = 8
+egress_mode  = "ethernet"
+egress_iface = "eth1"
+
+# GRE tunnel (set egress_mode = "gre" to use)
+# gre_remote_ip = "198.51.100.1"
+
+# BGP / AnyCast (set enable_bgp = true to use)
+enable_bgp     = false
+bgp_daemon     = "bird2"
+anycast_prefix = ""
+anycast_vip    = ""
+bgp_local_as   = 65001
+bgp_peer_as    = 65000
+bgp_peer_ip    = ""

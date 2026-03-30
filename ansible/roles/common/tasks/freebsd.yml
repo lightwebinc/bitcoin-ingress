@@ -1,0 +1,11 @@
+---
+- name: Install build dependencies (FreeBSD)
+  community.general.pkgng:
+    name:
+      - gmake
+      - git
+      - curl
+      - ca_root_nss
+      - bash
+      - tar
+    state: present

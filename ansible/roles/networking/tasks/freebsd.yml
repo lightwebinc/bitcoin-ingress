@@ -1,0 +1,39 @@
+---
+- name: Enable IPv6 in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^ipv6_enable=', line: 'ipv6_enable="YES"' }
+    - { regexp: '^gateway_enable=', line: 'gateway_enable="YES"' }
+    - { regexp: '^ipv6_gateway_enable=', line: 'ipv6_gateway_enable="YES"' }
+
+- name: Configure ethernet egress interface in rc.conf
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "^ifconfig_{{ egress_iface if egress_iface is string else egress_iface[0] }}_ipv6="
+    line: >-
+      ifconfig_{{ egress_iface if egress_iface is string else egress_iface[0] }}_ipv6="inet6 accept_rtadv"
+  when: egress_mode == 'ethernet'
+
+- name: Configure GRE tunnel in rc.conf
+  ansible.builtin.blockinfile:
+    path: /etc/rc.conf
+    marker: "# {mark} bitcoin-ingress GRE tunnel"
+    block: |
+      cloned_interfaces="{{ gre_iface }}"
+      ifconfig_{{ gre_iface }}="tunnel {{ gre_local_ip }} {{ gre_remote_ip }}"
+      ifconfig_{{ gre_iface }}_ipv6="inet6 {{ gre_inner_ipv6 }}"
+  when: egress_mode == 'gre'
+
+- name: Configure AnyCast loopback VIP in rc.conf
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^ifconfig_lo0_alias0='
+    line: 'ifconfig_lo0_alias0="inet {{ anycast_vip }} netmask 255.255.255.255"'
+  when: enable_bgp | bool and anycast_vip | length > 0
+
+- name: Restart networking (FreeBSD)
+  ansible.builtin.command: service netif restart
+  changed_when: true

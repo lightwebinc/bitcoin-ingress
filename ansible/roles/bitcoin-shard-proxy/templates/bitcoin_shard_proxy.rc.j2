@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# PROVIDE: bitcoin_shard_proxy
+# REQUIRE: NETWORKING DAEMON
+# KEYWORD: shutdown
+#
+# Managed by Ansible — do not edit manually
+#
+# Add the following to /etc/rc.conf to enable:
+#   bitcoin_shard_proxy_enable="YES"
+
+. /etc/rc.subr
+
+name="bitcoin_shard_proxy"
+rcvar="bitcoin_shard_proxy_enable"
+desc="Bitcoin Shard Proxy"
+
+load_rc_config "${name}"
+
+: ${bitcoin_shard_proxy_enable:="NO"}
+: ${bitcoin_shard_proxy_user:="{{ proxy_user }}"}
+: ${bitcoin_shard_proxy_group:="{{ proxy_group }}"}
+: ${bitcoin_shard_proxy_config:="/usr/local/etc/bitcoin-shard-proxy.conf"}
+: ${bitcoin_shard_proxy_logfile:="/var/log/bitcoin_shard_proxy.log"}
+: ${bitcoin_shard_proxy_pidfile:="/var/run/bitcoin_shard_proxy.pid"}
+
+pidfile="${bitcoin_shard_proxy_pidfile}"
+command="{{ proxy_bin_dir }}/bitcoin-shard-proxy"
+command_args=""
+
+start_precmd="bitcoin_shard_proxy_prestart"
+start_cmd="bitcoin_shard_proxy_start"
+stop_cmd="bitcoin_shard_proxy_stop"
+status_cmd="bitcoin_shard_proxy_status"
+
+bitcoin_shard_proxy_prestart()
+{
+    # Load environment from config file
+    if [ -f "${bitcoin_shard_proxy_config}" ]; then
+        . "${bitcoin_shard_proxy_config}"
+    fi
+    export LISTEN_ADDR LISTEN_PORT EGRESS_PORT MULTICAST_IF SHARD_BITS
+    export MC_SCOPE MC_BASE_ADDR NUM_WORKERS METRICS_ADDR
+    export OTLP_ENDPOINT OTLP_INTERVAL DEBUG
+
+    # Add IPv6 multicast route
+    /sbin/route -6 add -net ff00::/8 -interface {{ egress_iface if egress_iface is string else egress_iface[0] }} 2>/dev/null || true
+}
+
+bitcoin_shard_proxy_start()
+{
+    bitcoin_shard_proxy_prestart
+    /usr/sbin/daemon -f -p "${pidfile}" -u "${bitcoin_shard_proxy_user}" \
+        ${command} >> "${bitcoin_shard_proxy_logfile}" 2>&1
+    echo "bitcoin_shard_proxy started."
+}
+
+bitcoin_shard_proxy_stop()
+{
+    if [ -f "${pidfile}" ]; then
+        kill -TERM $(cat "${pidfile}") && rm -f "${pidfile}"
+        echo "bitcoin_shard_proxy stopped."
+    else
+        echo "bitcoin_shard_proxy is not running."
+    fi
+}
+
+bitcoin_shard_proxy_status()
+{
+    if [ -f "${pidfile}" ] && kill -0 $(cat "${pidfile}") 2>/dev/null; then
+        echo "bitcoin_shard_proxy is running (pid $(cat ${pidfile}))."
+    else
+        echo "bitcoin_shard_proxy is not running."
+        return 1
+    fi
+}
+
+run_rc_command "$1"

@@ -1,0 +1,10 @@
+# Managed by Ansible (bitcoin-ingress) — do not edit manually
+network:
+  version: 2
+  tunnels:
+    {{ gre_iface }}:
+      mode: gre
+      local: "{{ gre_local_ip }}"
+      remote: "{{ gre_remote_ip }}"
+      addresses:
+        - "{{ gre_inner_ipv6 }}"

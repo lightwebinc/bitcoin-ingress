@@ -1,0 +1,7 @@
+[Unit]
+Description=BGP health-check for bitcoin-shard-proxy
+After=bitcoin-shard-proxy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bsp-bgp-check.sh

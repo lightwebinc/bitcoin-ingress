@@ -1,0 +1,41 @@
+---
+all:
+  children:
+    ingress_nodes:
+      vars:
+        # Variables here apply to all ingress nodes.
+        # Override per-host below as needed.
+        ansible_user: ubuntu
+        egress_mode: ethernet
+        egress_iface: eth1
+        shard_bits: 8
+        enable_bgp: false
+
+      hosts:
+        node-01:
+          ansible_host: 203.0.113.10
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+          egress_iface: eth1
+          bgp_router_id: 203.0.113.10
+          bgp_peer_ip: 203.0.113.254
+
+        node-02:
+          ansible_host: 198.51.100.20
+          ansible_user: freebsd
+          ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+          # FreeBSD uses vtnet0/vtnet1 naming
+          egress_iface: vtnet1
+          bgp_router_id: 198.51.100.20
+          bgp_peer_ip: 198.51.100.254
+
+    # Example group for GRE-egress nodes
+    # ingress_nodes_gre:
+    #   vars:
+    #     egress_mode: gre
+    #     gre_remote_ip: "198.51.100.1"
+    #   hosts:
+    #     node-03:
+    #       ansible_host: 203.0.113.30
+    #       gre_local_ip: 203.0.113.30
+    #       gre_inner_ipv6: "2001:db8:2::3/64"

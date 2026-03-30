@@ -1,0 +1,10 @@
+[Unit]
+Description=BGP health-check timer for bitcoin-shard-proxy
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=10s
+Unit=bsp-bgp-check.service
+
+[Install]
+WantedBy=timers.target

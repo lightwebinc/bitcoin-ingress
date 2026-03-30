@@ -1,0 +1,62 @@
+---
+- name: Set Go architecture fact
+  ansible.builtin.set_fact:
+    go_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+- name: Set Go OS fact
+  ansible.builtin.set_fact:
+    go_os: "{{ 'freebsd' if ansible_os_family == 'FreeBSD' else 'linux' }}"
+
+- name: Set Go tarball name
+  ansible.builtin.set_fact:
+    go_tarball: "go{{ go_version }}.{{ go_os }}-{{ go_arch }}.tar.gz"
+
+- name: Check if Go is already installed at the correct version
+  ansible.builtin.command: "{{ go_install_dir }}/bin/go version"
+  register: go_current_version
+  changed_when: false
+  failed_when: false
+
+- name: Download and install Go toolchain
+  when: >
+    go_current_version.rc != 0 or
+    go_version not in go_current_version.stdout
+  block:
+    - name: Download Go tarball
+      ansible.builtin.get_url:
+        url: "https://go.dev/dl/{{ go_tarball }}"
+        dest: "/tmp/{{ go_tarball }}"
+        mode: "0644"
+
+    - name: Remove existing Go installation
+      ansible.builtin.file:
+        path: "{{ go_install_dir }}"
+        state: absent
+
+    - name: Extract Go tarball to /usr/local
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ go_tarball }}"
+        dest: /usr/local
+        remote_src: true
+
+    - name: Remove Go tarball
+      ansible.builtin.file:
+        path: "/tmp/{{ go_tarball }}"
+        state: absent
+
+- name: Add Go to system PATH via profile.d (Linux)
+  ansible.builtin.copy:
+    dest: /etc/profile.d/go.sh
+    content: |
+      export PATH="{{ go_install_dir }}/bin:$PATH"
+      export GOPATH="$HOME/go"
+    mode: "0644"
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Add Go to system PATH via /etc/profile (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/profile
+    line: 'export PATH="{{ go_install_dir }}/bin:$PATH"'
+    create: true
+    mode: "0644"
+  when: ansible_os_family == 'FreeBSD'

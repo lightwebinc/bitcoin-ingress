@@ -1,0 +1,43 @@
+# BIRD2 configuration for bitcoin-ingress AnyCast
+# Managed by Ansible — do not edit manually
+
+router id {{ bgp_router_id }};
+
+protocol device {}
+
+protocol direct {
+  ipv4;
+  ipv6;
+}
+
+protocol kernel {
+  ipv4 {
+    export all;
+  };
+  ipv6 {
+    export all;
+  };
+}
+
+protocol static anycast_routes {
+  ipv4;
+  route {{ anycast_prefix }} blackhole;
+}
+
+protocol bgp upstream {
+  local as {{ bgp_local_as }};
+  neighbor {{ bgp_peer_ip }} as {{ bgp_peer_as }};
+  hold time {{ bgp_hold_time }};
+  keepalive time {{ bgp_keepalive }};
+{% if bgp_password | length > 0 %}
+  password "{{ bgp_password }}";
+{% endif %}
+
+  ipv4 {
+    import none;
+    export filter {
+      if proto = "anycast_routes" then accept;
+      reject;
+    };
+  };
+}

@@ -1,0 +1,39 @@
+---
+- name: Install and configure BGP daemon
+  ansible.builtin.include_tasks: "{{ bgp_daemon }}.yml"
+
+- name: Deploy BGP health-check script
+  ansible.builtin.template:
+    src: bsp-bgp-check.sh.j2
+    dest: /usr/local/bin/bsp-bgp-check.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy health-check systemd timer (Linux)
+  ansible.builtin.template:
+    src: bsp-bgp-check.timer.j2
+    dest: /etc/systemd/system/bsp-bgp-check.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family != 'FreeBSD'
+  notify: Enable and start bsp-bgp-check timer
+
+- name: Deploy health-check systemd service (Linux)
+  ansible.builtin.template:
+    src: bsp-bgp-check.service.j2
+    dest: /etc/systemd/system/bsp-bgp-check.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family != 'FreeBSD'
+  notify: Enable and start bsp-bgp-check timer
+
+- name: Deploy health-check periodic cron entry (FreeBSD)
+  ansible.builtin.cron:
+    name: bsp-bgp-check
+    minute: "*/1"
+    job: /usr/local/bin/bsp-bgp-check.sh
+    state: present
+  when: ansible_os_family == 'FreeBSD'

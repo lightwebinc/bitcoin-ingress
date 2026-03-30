@@ -1,0 +1,10 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Restart bitcoin-shard-proxy
+  ansible.builtin.service:
+    name: "{{ 'bitcoin-shard-proxy' if ansible_os_family != 'FreeBSD' else 'bitcoin_shard_proxy' }}"
+    state: restarted

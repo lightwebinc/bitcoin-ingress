@@ -1,0 +1,41 @@
+---
+- name: Enable IPv6 forwarding via sysctl
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    state: present
+    sysctl_file: /etc/sysctl.d/60-bitcoin-ingress.conf
+    reload: true
+  loop:
+    - net.ipv6.conf.all.forwarding
+    - net.ipv6.conf.all.mc_forwarding
+
+- name: Deploy netplan config for ethernet egress
+  ansible.builtin.template:
+    src: netplan-ethernet.yaml.j2
+    dest: /etc/netplan/60-bitcoin-ingress.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: egress_mode == 'ethernet'
+  notify: Apply netplan
+
+- name: Deploy netplan config for GRE tunnel egress
+  ansible.builtin.template:
+    src: netplan-gre.yaml.j2
+    dest: /etc/netplan/61-bitcoin-ingress-gre.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: egress_mode == 'gre'
+  notify: Apply netplan
+
+- name: Deploy AnyCast VIP netplan config
+  ansible.builtin.template:
+    src: netplan-vip.yaml.j2
+    dest: /etc/netplan/62-bitcoin-ingress-vip.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  when: enable_bgp | bool and anycast_vip | length > 0
+  notify: Apply netplan

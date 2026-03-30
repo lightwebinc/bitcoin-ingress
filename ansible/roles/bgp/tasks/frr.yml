@@ -1,0 +1,34 @@
+---
+- name: Fail if FRR requested on FreeBSD
+  ansible.builtin.fail:
+    msg: "FRR is not available in FreeBSD 14 ports. Set bgp_daemon: bird2 for FreeBSD hosts."
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Install FRR (Ubuntu/Debian)
+  ansible.builtin.apt:
+    name: frr
+    state: present
+
+- name: Enable bgpd and zebra in FRR daemons file
+  ansible.builtin.template:
+    src: frr-daemons.j2
+    dest: /etc/frr/daemons
+    owner: frr
+    group: frr
+    mode: "0640"
+  notify: Restart frr
+
+- name: Deploy FRR configuration
+  ansible.builtin.template:
+    src: frr.conf.j2
+    dest: /etc/frr/frr.conf
+    owner: frr
+    group: frr
+    mode: "0640"
+  notify: Restart frr
+
+- name: Enable and start FRR
+  ansible.builtin.systemd:
+    name: frr
+    enabled: true
+    state: started

@@ -1,0 +1,27 @@
+! FRR configuration for bitcoin-ingress AnyCast
+! Managed by Ansible — do not edit manually
+!
+frr defaults traditional
+log syslog informational
+!
+router bgp {{ bgp_local_as }}
+ bgp router-id {{ bgp_router_id }}
+ neighbor {{ bgp_peer_ip }} remote-as {{ bgp_peer_as }}
+ neighbor {{ bgp_peer_ip }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
+{% if bgp_password | length > 0 %}
+ neighbor {{ bgp_peer_ip }} password {{ bgp_password }}
+{% endif %}
+ !
+ address-family ipv4 unicast
+  network {{ anycast_prefix }}
+  neighbor {{ bgp_peer_ip }} route-map EXPORT out
+  neighbor {{ bgp_peer_ip }} route-map DENY in
+ exit-address-family
+!
+ip prefix-list ANYCAST seq 10 permit {{ anycast_prefix }}
+!
+route-map EXPORT permit 10
+ match ip address prefix-list ANYCAST
+!
+route-map DENY deny 10
+!

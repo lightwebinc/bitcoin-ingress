@@ -1,0 +1,19 @@
+---
+- name: Deploy bitcoin-ingress proxy nodes
+  hosts: ingress_nodes
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+      tags: [common]
+
+    - role: bitcoin-shard-proxy
+      tags: [proxy]
+
+    - role: networking
+      tags: [networking]
+
+    - role: bgp
+      tags: [bgp]
+      when: enable_bgp | bool

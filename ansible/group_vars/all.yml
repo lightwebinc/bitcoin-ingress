@@ -1,0 +1,64 @@
+---
+# ============================================================
+# bitcoin-ingress Ansible group_vars/all.yml
+# Override any variable per-host in inventory/hosts.yml
+# ============================================================
+
+# ------------------------------------------------------------
+# bitcoin-shard-proxy source and build
+# ------------------------------------------------------------
+proxy_repo: "https://github.com/lightwebinc/bitcoin-shard-proxy.git"
+proxy_version: "main"
+proxy_install_dir: "/opt/bitcoin-shard-proxy"
+proxy_bin_dir: "/usr/local/bin"
+proxy_user: "bitcoin-proxy"
+proxy_group: "bitcoin-proxy"
+
+# Go toolchain version (used when building from source)
+go_version: "1.22.3"
+go_install_dir: "/usr/local/go"
+
+# ------------------------------------------------------------
+# Proxy runtime configuration
+# All flags have env-var equivalents set in the service unit
+# ------------------------------------------------------------
+listen_addr: "[::]"
+listen_port: 9000
+egress_port: 9001
+shard_bits: 8
+mc_scope: "site"
+mc_base_addr: ""
+num_workers: 0
+metrics_addr: ":9100"
+otlp_endpoint: ""
+otlp_interval: "30s"
+proxy_debug: false
+
+# ------------------------------------------------------------
+# Networking
+# ------------------------------------------------------------
+egress_mode: "ethernet"       # ethernet | gre
+egress_iface: "eth1"          # interface name or list of names
+
+# GRE tunnel (only used when egress_mode == gre)
+gre_local_ip: ""
+gre_remote_ip: ""
+gre_iface: "gre0"
+gre_inner_ipv6: ""
+
+# ------------------------------------------------------------
+# BGP / AnyCast (optional)
+# ------------------------------------------------------------
+enable_bgp: false
+bgp_daemon: "bird2"           # bird2 | frr
+
+anycast_prefix: ""            # e.g. "192.0.2.0/24"
+anycast_vip: ""               # e.g. "192.0.2.1"
+
+bgp_local_as: 65001
+bgp_peer_as: 65000
+bgp_peer_ip: ""
+bgp_router_id: "{{ ansible_default_ipv4.address }}"
+bgp_hold_time: 90
+bgp_keepalive: 30
+bgp_password: ""

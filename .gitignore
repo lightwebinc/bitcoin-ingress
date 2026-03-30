@@ -1,0 +1,25 @@
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/generated-inventory-*.yml
+**/.terraform.tfstate.lock.info
+**/crash.log
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+
+# Ansible
+ansible/inventory/hosts.yml
+ansible/*.retry
+
+# SSH keys
+*.pem
+*.p12
+
+# OS
+.DS_Store
+Thumbs.db
