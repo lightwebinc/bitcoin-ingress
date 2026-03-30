@@ -29,6 +29,7 @@
     dest: "{{ proxy_install_dir }}"
     version: "{{ proxy_version }}"
     force: false
+  become: true
   become_user: "{{ proxy_user }}"
   register: git_result
 
@@ -36,15 +37,15 @@
   ansible.builtin.command:
     cmd: "{{ go_install_dir }}/bin/go build -o {{ proxy_install_dir }}/bitcoin-shard-proxy ."
     chdir: "{{ proxy_install_dir }}"
+    creates: "{{ proxy_install_dir }}/bitcoin-shard-proxy"
   environment:
     PATH: "{{ go_install_dir }}/bin:{{ ansible_env.PATH }}"
     CGO_ENABLED: "0"
     GOOS: "{{ 'freebsd' if ansible_os_family == 'FreeBSD' else 'linux' }}"
     GOARCH: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
-  when: git_result.changed
+  become: true
   become_user: "{{ proxy_user }}"
-  register: build_result
-  notify: Restart bitcoin-shard-proxy
+  changed_when: true
 
 - name: Install binary to system bin dir
   ansible.builtin.copy:
@@ -54,7 +55,6 @@
     owner: root
     group: "{{ proxy_group }}"
     mode: "0755"
-  when: build_result is defined and build_result.changed
   notify: Restart bitcoin-shard-proxy
 
 - name: Create config directory
@@ -112,8 +112,7 @@
   when: ansible_os_family == 'FreeBSD'
 
 - name: Start bitcoin-shard-proxy (FreeBSD)
-  ansible.builtin.command: service bitcoin_shard_proxy start
-  register: rc_start
-  changed_when: rc_start.rc == 0
-  failed_when: false
+  ansible.builtin.service:
+    name: bitcoin_shard_proxy
+    state: started
   when: ansible_os_family == 'FreeBSD'

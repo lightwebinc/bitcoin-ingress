@@ -35,5 +35,6 @@
   when: enable_bgp | bool and anycast_vip | length > 0
 
 - name: Restart networking (FreeBSD)
-  ansible.builtin.command: service netif restart
-  changed_when: true
+  ansible.builtin.service:
+    name: netif
+    state: restarted

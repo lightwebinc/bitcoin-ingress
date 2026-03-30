@@ -45,8 +45,7 @@
   when: ansible_os_family == 'FreeBSD'
 
 - name: Start BIRD2 (FreeBSD)
-  ansible.builtin.command: service bird start
-  register: bird_start
-  changed_when: bird_start.rc == 0
-  failed_when: false
+  ansible.builtin.service:
+    name: bird
+    state: started
   when: ansible_os_family == 'FreeBSD'
