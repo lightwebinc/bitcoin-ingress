@@ -5,8 +5,8 @@
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   loop:
-    - { regexp: '^ipv6_enable=',         line: 'ipv6_enable="YES"' }
-    - { regexp: '^gateway_enable=',      line: 'gateway_enable="YES"' }
+    - { regexp: '^ipv6_enable=', line: 'ipv6_enable="YES"' }
+    - { regexp: '^gateway_enable=', line: 'gateway_enable="YES"' }
     - { regexp: '^ipv6_gateway_enable=', line: 'ipv6_gateway_enable="YES"' }
 
 - name: Configure dual-stack ingress interface in rc.conf (ethernet, FreeBSD)
