@@ -99,44 +99,39 @@ resource "aws_vpc_security_group_ingress_rule" "bsv_udp" {
   to_port           = var.listen_port
   ip_protocol       = "udp"
   cidr_ipv4         = "0.0.0.0/0"
-
-  tags = local.common_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
-  for_each          = toset(var.ssh_allowed_cidrs)
+  for_each = toset(var.ssh_allowed_cidrs)
+
   security_group_id = aws_security_group.ingress_node.id
   description       = "SSH management"
   from_port         = 22
   to_port           = 22
   ip_protocol       = "tcp"
   cidr_ipv4         = each.value
-
-  tags = local.common_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "metrics" {
-  for_each          = toset(var.metrics_allowed_cidrs)
+  for_each = toset(var.metrics_allowed_cidrs)
+
   security_group_id = aws_security_group.ingress_node.id
   description       = "Prometheus metrics"
   from_port         = 9100
   to_port           = 9100
   ip_protocol       = "tcp"
   cidr_ipv4         = each.value
-
-  tags = local.common_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "bgp" {
-  count             = var.enable_bgp ? 1 : 0
+  count = var.enable_bgp ? 1 : 0
+
   security_group_id = aws_security_group.ingress_node.id
   description       = "BGP"
   from_port         = 179
   to_port           = 179
   ip_protocol       = "tcp"
   cidr_ipv4         = "0.0.0.0/0"
-
-  tags = local.common_tags
 }
 
 resource "aws_vpc_security_group_egress_rule" "all" {
@@ -144,8 +139,6 @@ resource "aws_vpc_security_group_egress_rule" "all" {
   description       = "Allow all outbound"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
-
-  tags = local.common_tags
 }
 
 # ---------------------------------------------------------------
@@ -220,8 +213,8 @@ module "bgp" {
 # Provision each instance via Ansible
 # ---------------------------------------------------------------
 module "ingress_nodes" {
-  source   = "../../modules/ingress-node"
-  count    = var.instance_count
+  source = "../../modules/ingress-node"
+  count  = var.instance_count
 
   host_ip              = local.node_ips[count.index]
   ssh_user             = "ubuntu"
