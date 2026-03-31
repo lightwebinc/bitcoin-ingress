@@ -1,34 +1,69 @@
 ---
-- name: Fail if FRR requested on FreeBSD
-  ansible.builtin.fail:
-    msg: "FRR is not available in FreeBSD 14 ports. Set bgp_daemon: bird2 for FreeBSD hosts."
-  when: ansible_os_family == 'FreeBSD'
-
 - name: Install FRR (Ubuntu/Debian)
   ansible.builtin.apt:
     name: frr
     state: present
+  when: ansible_os_family == 'Debian'
 
-- name: Enable bgpd and zebra in FRR daemons file
+- name: Install FRR (FreeBSD)
+  community.general.pkgng:
+    name: frr
+    state: present
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Set FRR config directory
+  ansible.builtin.set_fact:
+    bgp_frr_conf_dir: "{{ '/usr/local/etc/frr' if ansible_os_family == 'FreeBSD' else '/etc/frr' }}"
+
+- name: Ensure FRR config directory exists
+  ansible.builtin.file:
+    path: "{{ bgp_frr_conf_dir }}"
+    state: directory
+    owner: frr
+    group: frr
+    mode: "0750"
+
+- name: Enable bgpd and zebra in FRR daemons file (Linux)
   ansible.builtin.template:
     src: frr-daemons.j2
-    dest: /etc/frr/daemons
+    dest: "{{ bgp_frr_conf_dir }}/daemons"
     owner: frr
     group: frr
     mode: "0640"
+  when: ansible_os_family == 'Debian'
+  notify: Restart frr
+
+- name: Enable FRR daemons in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^frr_enable=', line: 'frr_enable="YES"' }
+    - { regexp: '^zebra_enable=', line: 'zebra_enable="YES"' }
+    - { regexp: '^bgpd_enable=', line: 'bgpd_enable="YES"' }
+  when: ansible_os_family == 'FreeBSD'
   notify: Restart frr
 
 - name: Deploy FRR configuration
   ansible.builtin.template:
     src: frr.conf.j2
-    dest: /etc/frr/frr.conf
+    dest: "{{ bgp_frr_conf_dir }}/frr.conf"
     owner: frr
     group: frr
     mode: "0640"
   notify: Restart frr
 
-- name: Enable and start FRR
+- name: Enable and start FRR (Linux)
   ansible.builtin.systemd:
     name: frr
     enabled: true
     state: started
+  when: ansible_os_family == 'Debian'
+
+- name: Enable and start FRR (FreeBSD)
+  ansible.builtin.service:
+    name: frr
+    enabled: true
+    state: started
+  when: ansible_os_family == 'FreeBSD'

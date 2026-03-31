@@ -8,6 +8,7 @@
   ansible.builtin.service:
     name: frr
     state: restarted
+  listen: Restart frr
 
 - name: Enable and start bsp-bgp-check timer
   ansible.builtin.systemd:
