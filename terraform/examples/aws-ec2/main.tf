@@ -253,9 +253,10 @@ module "ingress_nodes" {
   ssh_user             = "ubuntu"
   ssh_private_key_path = var.ssh_private_key
 
-  shard_bits   = var.shard_bits
-  egress_mode  = var.egress_mode
-  egress_iface = var.egress_iface
+  shard_bits      = var.shard_bits
+  egress_mode     = var.egress_mode
+  egress_iface    = var.egress_iface
+  mc_route_prefix = var.mc_route_prefix
 
   gre_remote_ip6 = var.gre_remote_ip6
   gre_local_ip6  = local.node_ips[count.index]

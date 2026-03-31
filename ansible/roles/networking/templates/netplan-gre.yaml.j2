@@ -9,3 +9,6 @@ network:
       remote: "{{ gre_remote_ip6 }}"
       addresses:
         - "{{ gre_inner_ipv6 }}"
+      routes:
+        - to: "{{ networking_mc_route_prefix }}"
+          scope: link

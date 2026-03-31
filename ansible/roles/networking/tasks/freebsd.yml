@@ -47,6 +47,26 @@
     line: 'ifconfig_lo0_alias1="inet6 {{ anycast_vip6 }} prefixlen 128"'
   when: enable_bgp | bool and anycast_vip6 | length > 0
 
+- name: Add persistent multicast route for egress interface in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^ipv6_route_bsp_mcast='
+    line: 'ipv6_route_bsp_mcast="{{ networking_mc_route_prefix }} -interface {{ networking_egress_iface }}"'
+
+- name: Apply multicast route immediately (FreeBSD)
+  ansible.builtin.command:
+    argv:
+      - route
+      - add
+      - -inet6
+      - -net
+      - "{{ networking_mc_route_prefix }}"
+      - -interface
+      - "{{ networking_egress_iface }}"
+  register: networking_mc_route_result
+  changed_when: networking_mc_route_result.rc == 0
+  failed_when: networking_mc_route_result.rc != 0 and 'File exists' not in networking_mc_route_result.stderr
+
 - name: Restart networking (FreeBSD)
   ansible.builtin.service:
     name: netif

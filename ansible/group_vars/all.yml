@@ -40,6 +40,15 @@ proxy_debug: false
 egress_mode: "ethernet"       # ethernet | gre
 egress_iface: "eth1"          # interface name or list of names
 
+# Multicast route prefix for the egress interface.
+# Defaults to "" which means auto-derive from mc_scope:
+#   link   -> ff02::/16
+#   site   -> ff05::/16
+#   org    -> ff08::/16
+#   global -> ff0e::/16
+# Override this when using a narrower assigned prefix (mc_base_addr set).
+mc_route_prefix: ""
+
 # GRE tunnel (only used when egress_mode == gre)
 # The fabric is IPv6-only: local/remote endpoints are IPv6 addresses,
 # the tunnel mode is ip6gre (Linux) / gif (FreeBSD).

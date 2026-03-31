@@ -38,9 +38,10 @@ module "ingress_nodes" {
   ssh_user             = each.value.ssh_user
   ssh_private_key_path = each.value.ssh_key
 
-  shard_bits   = var.shard_bits
-  egress_mode  = var.egress_mode
-  egress_iface = var.egress_iface
+  shard_bits      = var.shard_bits
+  egress_mode     = var.egress_mode
+  egress_iface    = var.egress_iface
+  mc_route_prefix = var.mc_route_prefix
 
   gre_local_ip6  = each.value.gre_local_ip6
   gre_remote_ip6 = var.gre_remote_ip6

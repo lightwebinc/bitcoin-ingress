@@ -1,31 +1,25 @@
-variable "aws_region" {
-  description = "AWS region to deploy into"
-  type        = string
-  default     = "us-east-1"
-}
-
-variable "name_prefix" {
-  description = "Prefix for all resource names"
-  type        = string
-  default     = "bitcoin-ingress"
-}
-
-variable "environment" {
-  description = "Environment tag (e.g. production, staging)"
-  type        = string
-  default     = "production"
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
-  default     = "10.10.0.0/16"
+variable "allocate_eips" {
+  description = "Allocate Elastic IPs for each instance (useful for stable or anycast addressing)"
+  type        = bool
+  default     = false
 }
 
 variable "availability_zones" {
   description = "List of AZs to deploy subnets and instances into"
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"]
+}
+
+variable "aws_region" {
+  description = "AWS region to deploy into"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "environment" {
+  description = "Environment tag (e.g. production, staging)"
+  type        = string
+  default     = "production"
 }
 
 variable "instance_count" {
@@ -45,9 +39,16 @@ variable "key_name" {
   type        = string
 }
 
-variable "ssh_private_key" {
-  description = "Path to the local SSH private key file"
+variable "metrics_allowed_cidrs" {
+  description = "CIDR ranges allowed to reach the metrics port (9100)"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "name_prefix" {
+  description = "Prefix for all resource names"
   type        = string
+  default     = "bitcoin-ingress"
 }
 
 variable "ssh_allowed_cidrs" {
@@ -56,29 +57,22 @@ variable "ssh_allowed_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "metrics_allowed_cidrs" {
-  description = "CIDR ranges allowed to reach the metrics port (9100)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
+variable "ssh_private_key" {
+  description = "Path to the local SSH private key file"
+  type        = string
 }
 
-variable "allocate_eips" {
-  description = "Allocate Elastic IPs for each instance (useful for stable or anycast addressing)"
-  type        = bool
-  default     = false
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.10.0.0/16"
 }
 
 # Proxy configuration
-variable "listen_port" {
-  description = "UDP port for incoming BSV transaction frames"
-  type        = number
-  default     = 9000
-}
-
-variable "shard_bits" {
-  description = "Shard bit width (1-24)"
-  type        = number
-  default     = 8
+variable "egress_iface" {
+  description = "Egress interface name on the target host"
+  type        = string
+  default     = "eth1"
 }
 
 variable "egress_mode" {
@@ -87,39 +81,33 @@ variable "egress_mode" {
   default     = "ethernet"
 }
 
-variable "egress_iface" {
-  description = "Egress interface name on the target host"
-  type        = string
-  default     = "eth1"
-}
-
 variable "gre_remote_ip6" {
   description = "Remote IPv6 endpoint for ip6gre tunnel (egress_mode=gre only)"
   type        = string
   default     = ""
 }
 
-# BGP / AnyCast
-variable "enable_bgp" {
-  description = "Enable eBGP AnyCast"
-  type        = bool
-  default     = false
+variable "listen_port" {
+  description = "UDP port for incoming BSV transaction frames"
+  type        = number
+  default     = 9000
 }
 
-variable "bgp_daemon" {
-  description = "BGP daemon: bird2 or frr"
-  type        = string
-  default     = "bird2"
-}
-
-variable "anycast_prefix" {
-  description = "IPv4 shared anycast prefix announced by all nodes"
+variable "mc_route_prefix" {
+  description = "IPv6 multicast route prefix for the egress interface (empty = auto-derive from mc_scope)"
   type        = string
   default     = ""
 }
 
-variable "anycast_vip" {
-  description = "IPv4 loopback VIP from the anycast prefix"
+variable "shard_bits" {
+  description = "Shard bit width (1-24)"
+  type        = number
+  default     = 8
+}
+
+# BGP / AnyCast
+variable "anycast_prefix" {
+  description = "IPv4 shared anycast prefix announced by all nodes"
   type        = string
   default     = ""
 }
@@ -130,16 +118,35 @@ variable "anycast_prefix6" {
   default     = ""
 }
 
+variable "anycast_vip" {
+  description = "IPv4 loopback VIP from the anycast prefix"
+  type        = string
+  default     = ""
+}
+
 variable "anycast_vip6" {
   description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }
 
+variable "bgp_daemon" {
+  description = "BGP daemon: bird2 or frr"
+  type        = string
+  default     = "bird2"
+}
+
 variable "bgp_local_as" {
   description = "Local BGP ASN"
   type        = number
   default     = 65001
+}
+
+variable "bgp_password" {
+  description = "Optional MD5 BGP session password"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "bgp_peer_as" {
@@ -160,9 +167,8 @@ variable "bgp_peer_ip6" {
   default     = ""
 }
 
-variable "bgp_password" {
-  description = "Optional MD5 BGP session password"
-  type        = string
-  default     = ""
-  sensitive   = true
+variable "enable_bgp" {
+  description = "Enable eBGP AnyCast"
+  type        = bool
+  default     = false
 }

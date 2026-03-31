@@ -1,0 +1,16 @@
+---
+# Internal role variables — not intended to be overridden by users.
+# Use group_vars/all.yml (mc_route_prefix, mc_scope) for configuration.
+
+# Map mc_scope keyword to the corresponding FF0x::/16 multicast prefix.
+networking_mc_scope_prefix_map:
+  link: "ff02::/16"
+  site: "ff05::/16"
+  org: "ff08::/16"
+  global: "ff0e::/16"
+
+# Resolved multicast route prefix: honour explicit override, else derive from scope.
+networking_mc_route_prefix: "{{ mc_route_prefix if mc_route_prefix | length > 0 else networking_mc_scope_prefix_map[mc_scope] }}"
+
+# Egress interface name (first entry when a list is given).
+networking_egress_iface: "{{ egress_iface if egress_iface is string else egress_iface[0] }}"

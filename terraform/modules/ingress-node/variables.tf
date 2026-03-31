@@ -1,5 +1,22 @@
+variable "ansible_inventory_path" {
+  description = "Path to write the generated Ansible inventory file"
+  type        = string
+  default     = ""
+}
+
+variable "ansible_playbook_path" {
+  description = "Absolute path to the Ansible site.yml playbook"
+  type        = string
+  default     = ""
+}
+
 variable "host_ip" {
   description = "Public IP address of the target host"
+  type        = string
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to the SSH private key file"
   type        = string
 }
 
@@ -9,24 +26,43 @@ variable "ssh_user" {
   default     = "ubuntu"
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to the SSH private key file"
-  type        = string
-}
-
-variable "ansible_playbook_path" {
-  description = "Absolute path to the Ansible site.yml playbook"
-  type        = string
-  default     = ""
-}
-
-variable "ansible_inventory_path" {
-  description = "Path to write the generated Ansible inventory file"
-  type        = string
-  default     = ""
-}
-
 # Proxy configuration
+variable "egress_port" {
+  description = "UDP port for outgoing multicast datagrams"
+  type        = number
+  default     = 9001
+}
+
+variable "listen_port" {
+  description = "UDP port for incoming BSV transaction frames"
+  type        = number
+  default     = 9000
+}
+
+variable "mc_base_addr" {
+  description = "Optional assigned IPv6 base address for multicast groups"
+  type        = string
+  default     = ""
+}
+
+variable "mc_route_prefix" {
+  description = "IPv6 multicast route prefix for the egress interface (empty = auto-derive from mc_scope)"
+  type        = string
+  default     = ""
+}
+
+variable "mc_scope" {
+  description = "Multicast scope: link, site, org, or global"
+  type        = string
+  default     = "site"
+}
+
+variable "metrics_addr" {
+  description = "HTTP bind address for /metrics, /healthz, /readyz"
+  type        = string
+  default     = ":9100"
+}
+
 variable "proxy_repo" {
   description = "Git URL of the bitcoin-shard-proxy repository"
   type        = string
@@ -39,43 +75,19 @@ variable "proxy_version" {
   default     = "main"
 }
 
-variable "listen_port" {
-  description = "UDP port for incoming BSV transaction frames"
-  type        = number
-  default     = 9000
-}
-
-variable "egress_port" {
-  description = "UDP port for outgoing multicast datagrams"
-  type        = number
-  default     = 9001
-}
-
 variable "shard_bits" {
   description = "Shard bit width (1-24)"
   type        = number
   default     = 8
 }
 
-variable "mc_scope" {
-  description = "Multicast scope: link, site, org, or global"
-  type        = string
-  default     = "site"
-}
-
-variable "mc_base_addr" {
-  description = "Optional assigned IPv6 base address for multicast groups"
-  type        = string
-  default     = ""
-}
-
-variable "metrics_addr" {
-  description = "HTTP bind address for /metrics, /healthz, /readyz"
-  type        = string
-  default     = ":9100"
-}
-
 # Networking configuration
+variable "egress_iface" {
+  description = "Egress interface name (or comma-separated list)"
+  type        = string
+  default     = "eth1"
+}
+
 variable "egress_mode" {
   description = "Egress interface mode: ethernet or gre"
   type        = string
@@ -87,10 +99,10 @@ variable "egress_mode" {
   }
 }
 
-variable "egress_iface" {
-  description = "Egress interface name (or comma-separated list)"
+variable "gre_inner_ipv6" {
+  description = "IPv6 address/prefix assigned to the tunnel interface"
   type        = string
-  default     = "eth1"
+  default     = ""
 }
 
 variable "gre_local_ip6" {
@@ -105,17 +117,29 @@ variable "gre_remote_ip6" {
   default     = ""
 }
 
-variable "gre_inner_ipv6" {
-  description = "IPv6 address/prefix assigned to the tunnel interface"
+# BGP configuration
+variable "anycast_prefix" {
+  description = "IPv4 shared anycast prefix announced by all nodes"
   type        = string
   default     = ""
 }
 
-# BGP configuration
-variable "enable_bgp" {
-  description = "Enable eBGP AnyCast"
-  type        = bool
-  default     = false
+variable "anycast_prefix6" {
+  description = "IPv6 shared anycast prefix announced by all nodes (e.g. '2001:db8::/48')"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_vip" {
+  description = "IPv4 loopback VIP from the anycast prefix"
+  type        = string
+  default     = ""
+}
+
+variable "anycast_vip6" {
+  description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
+  type        = string
+  default     = ""
 }
 
 variable "bgp_daemon" {
@@ -129,34 +153,17 @@ variable "bgp_daemon" {
   }
 }
 
-variable "anycast_prefix" {
-  description = "IPv4 shared anycast prefix announced by all nodes"
-  type        = string
-  default     = ""
-}
-
-variable "anycast_vip" {
-  description = "IPv4 loopback VIP from the anycast prefix"
-  type        = string
-  default     = ""
-}
-
-variable "anycast_prefix6" {
-  description = "IPv6 shared anycast prefix announced by all nodes (e.g. '2001:db8::/48')"
-  type        = string
-  default     = ""
-}
-
-variable "anycast_vip6" {
-  description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
-  type        = string
-  default     = ""
-}
-
 variable "bgp_local_as" {
   description = "Local BGP ASN"
   type        = number
   default     = 65001
+}
+
+variable "bgp_password" {
+  description = "Optional MD5 BGP session password"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "bgp_peer_as" {
@@ -183,11 +190,10 @@ variable "bgp_router_id" {
   default     = ""
 }
 
-variable "bgp_password" {
-  description = "Optional MD5 BGP session password"
-  type        = string
-  default     = ""
-  sensitive   = true
+variable "enable_bgp" {
+  description = "Enable eBGP AnyCast"
+  type        = bool
+  default     = false
 }
 
 variable "extra_ansible_vars" {

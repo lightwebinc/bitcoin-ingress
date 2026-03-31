@@ -56,40 +56,35 @@ Use GRE when the ingress node connects to the multicast fabric over IP (e.g., a 
 colocation fabric router). The role creates a GRE interface, assigns an IPv6 address to it, and
 configures the routing table so multicast traffic uses the tunnel.
 
+The fabric is **IPv6-only**. The GRE tunnel runs over IPv6 (`ip6gre` on Linux, `gif` on FreeBSD).
+The local and remote endpoints are IPv6 addresses.
+
 ```yaml
 egress_mode: gre
-gre_local_ip: "203.0.113.10"      # public IP of this node
-gre_remote_ip: "198.51.100.1"     # fabric router GRE endpoint
-gre_iface: gre0                   # tunnel interface name
+gre_local_ip6: "2001:db8:a::1"    # IPv6 address of this node (tunnel source)
+gre_remote_ip6: "2001:db8:a::254" # IPv6 address of the fabric router (tunnel destination)
+gre_iface: gre6-bsp               # tunnel interface name
 gre_inner_ipv6: "2001:db8:2::2/64"
 ```
 
 ### Ubuntu 24.04
 
-The role creates `/etc/netplan/61-bitcoin-ingress-gre.yaml` and a systemd-networkd `.netdev`:
-
-```ini
-# /etc/systemd/network/gre0.netdev
-[NetDev]
-Name=gre0
-Kind=gre
-
-[Tunnel]
-Local=203.0.113.10
-Remote=198.51.100.1
-```
+The role creates `/etc/netplan/61-bitcoin-ingress-gre.yaml`:
 
 ```yaml
 # /etc/netplan/61-bitcoin-ingress-gre.yaml
 network:
   version: 2
   tunnels:
-    gre0:
-      mode: gre
-      local: "203.0.113.10"
-      remote: "198.51.100.1"
+    gre6-bsp:
+      mode: ip6gre
+      local: "2001:db8:a::1"
+      remote: "2001:db8:a::254"
       addresses:
         - "2001:db8:2::2/64"
+      routes:
+        - to: "ff05::/16"
+          scope: link
 ```
 
 ### FreeBSD 14
@@ -97,35 +92,64 @@ network:
 The role appends to `/etc/rc.conf`:
 
 ```text
-cloned_interfaces="gre0"
-ifconfig_gre0="tunnel 203.0.113.10 198.51.100.1"
-ifconfig_gre0_ipv6="inet6 2001:db8:2::2 prefixlen 64"
+cloned_interfaces="gif0"
+ifconfig_gif0="tunnel 2001:db8:a::1 2001:db8:a::254"
+ifconfig_gif0_ipv6="inet6 2001:db8:2::2 prefixlen 64"
+ipv6_route_bsp_mcast="ff05::/16 -interface gif0"
 ```
 
 ---
 
 ## IPv6 multicast routing
 
-On both OSes, the role ensures:
+The proxy sends datagrams to addresses in the `FF<scope>::/16` range determined by `mc_scope`.
+The OS must have a route for that prefix pointing at the egress interface.
 
-- IPv6 forwarding is enabled.
-- The FF00::/8 multicast route is present on the egress interface.
+### Route prefix derivation
 
-### Ubuntu
+The route prefix is derived automatically from `mc_scope`:
 
-```bash
-sysctl -w net.ipv6.conf.all.forwarding=1
-ip -6 route add ff00::/8 dev <egress_iface> table local
+| `mc_scope` | Derived `mc_route_prefix` |
+|------------|---------------------------|
+| `link`     | `ff02::/16`               |
+| `site`     | `ff05::/16`               |
+| `org`      | `ff08::/16`               |
+| `global`   | `ff0e::/16`               |
+
+To override (e.g. when `mc_base_addr` narrows the address space further):
+
+```yaml
+mc_route_prefix: "ff05:0:0:1234::/64"   # explicit prefix, skips auto-derivation
 ```
 
-Persisted via `/etc/sysctl.d/60-bitcoin-ingress.conf` and a systemd `ExecStartPre` in the service unit.
+Leave `mc_route_prefix: ""` (the default) to use the auto-derived scope prefix.
 
-### FreeBSD
+### Multicast route — Ubuntu 24.04
+
+The route is injected as a `routes:` stanza in the egress interface's netplan file
+(`/etc/netplan/60-bitcoin-ingress.yaml` or `61-bitcoin-ingress-gre.yaml`) and applied
+immediately via `ip -6 route replace`.
+
+```yaml
+routes:
+  - to: "ff05::/16"   # matches mc_scope: site
+    scope: link
+```
+
+### Multicast route — FreeBSD 14
+
+The route is persisted via an `ipv6_route_bsp_mcast` entry in `/etc/rc.conf` and applied
+immediately via `route add -inet6`:
 
 ```text
-# /etc/rc.conf
-ipv6_enable="YES"
+ipv6_route_bsp_mcast="ff05::/16 -interface eth1"
+```
+
+IPv4/IPv6 forwarding is also enabled:
+
+```text
 gateway_enable="YES"
+ipv6_gateway_enable="YES"
 ```
 
 ---

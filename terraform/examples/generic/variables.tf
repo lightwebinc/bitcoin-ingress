@@ -12,50 +12,8 @@ variable "hosts" {
   }))
 }
 
-variable "shard_bits" {
-  description = "Shard bit width (1-24)"
-  type        = number
-  default     = 8
-}
-
-variable "egress_mode" {
-  description = "Egress interface mode: ethernet or gre"
-  type        = string
-  default     = "ethernet"
-}
-
-variable "egress_iface" {
-  description = "Egress interface name"
-  type        = string
-  default     = "eth1"
-}
-
-variable "gre_remote_ip6" {
-  description = "Remote IPv6 endpoint for ip6gre tunnel (egress_mode=gre only, shared across all hosts)"
-  type        = string
-  default     = ""
-}
-
-variable "enable_bgp" {
-  description = "Enable eBGP AnyCast"
-  type        = bool
-  default     = false
-}
-
-variable "bgp_daemon" {
-  description = "BGP daemon: bird2 or frr"
-  type        = string
-  default     = "bird2"
-}
-
 variable "anycast_prefix" {
   description = "IPv4 shared anycast prefix announced by all nodes"
-  type        = string
-  default     = ""
-}
-
-variable "anycast_vip" {
-  description = "IPv4 loopback VIP from the anycast prefix"
   type        = string
   default     = ""
 }
@@ -66,16 +24,35 @@ variable "anycast_prefix6" {
   default     = ""
 }
 
+variable "anycast_vip" {
+  description = "IPv4 loopback VIP from the anycast prefix"
+  type        = string
+  default     = ""
+}
+
 variable "anycast_vip6" {
   description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }
 
+variable "bgp_daemon" {
+  description = "BGP daemon: bird2 or frr"
+  type        = string
+  default     = "bird2"
+}
+
 variable "bgp_local_as" {
   description = "Local BGP ASN"
   type        = number
   default     = 65001
+}
+
+variable "bgp_password" {
+  description = "Optional MD5 BGP session password"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "bgp_peer_as" {
@@ -96,9 +73,38 @@ variable "bgp_peer_ip6" {
   default     = ""
 }
 
-variable "bgp_password" {
-  description = "Optional MD5 BGP session password"
+variable "egress_iface" {
+  description = "Egress interface name"
+  type        = string
+  default     = "eth1"
+}
+
+variable "egress_mode" {
+  description = "Egress interface mode: ethernet or gre"
+  type        = string
+  default     = "ethernet"
+}
+
+variable "enable_bgp" {
+  description = "Enable eBGP AnyCast"
+  type        = bool
+  default     = false
+}
+
+variable "gre_remote_ip6" {
+  description = "Remote IPv6 endpoint for ip6gre tunnel (egress_mode=gre only, shared across all hosts)"
   type        = string
   default     = ""
-  sensitive   = true
+}
+
+variable "mc_route_prefix" {
+  description = "IPv6 multicast route prefix for the egress interface (empty = auto-derive from mc_scope)"
+  type        = string
+  default     = ""
+}
+
+variable "shard_bits" {
+  description = "Shard bit width (1-24)"
+  type        = number
+  default     = 8
 }

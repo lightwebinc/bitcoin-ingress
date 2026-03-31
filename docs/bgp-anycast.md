@@ -236,12 +236,14 @@ ifconfig_lo0_alias1="inet6 {{ anycast_vip6 }} prefixlen 128"          # IPv6 VIP
 | Feature                    | BIRD2              | FRR                    |
 |----------------------------|--------------------|------------------------|
 | Ubuntu 24.04               | Yes                | Yes                    |
-| FreeBSD 14                 | Yes                | Yes (`pkg install frr`)|
+| FreeBSD 14                 | Yes                | Yes                    |
 | Dual-stack (IPv4 + IPv6)   | Yes                | Yes                    |
-| BFD support                | Yes (via bfd proto)| Yes                    |
+| BFD support                | Yes                | Yes                    |
 | Filter language            | BIRD filter lang   | Cisco-like CLI (vtysh) |
+| PIM/PIM6 support           | No                 | Yes                    |
+| MLD support                | No                 | Yes                    |
 
-Both daemons support all features on both OSes. Choose based on operational preference:
+Both daemons support most features on both OSes. Choose based on operational preference:
 
-- `bird2` — simpler config for this use case, BIRD filter language
+- `bird2` — simpler config for this use case, BIRD filter language, no PIM/PIM6/MLD support, must be provided by other means if necessary. Not necessary if host is not routing multicast.
 - `frr` — Cisco-like CLI via `vtysh`, familiar for network engineers

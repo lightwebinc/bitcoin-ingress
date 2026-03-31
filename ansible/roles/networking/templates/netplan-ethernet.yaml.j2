@@ -4,7 +4,10 @@
 network:
   version: 2
   ethernets:
-    {{ egress_iface if egress_iface is string else egress_iface[0] }}:
+    {{ networking_egress_iface }}:
       dhcp4: true
       dhcp6: true
       accept-ra: true
+      routes:
+        - to: "{{ networking_mc_route_prefix }}"
+          scope: link

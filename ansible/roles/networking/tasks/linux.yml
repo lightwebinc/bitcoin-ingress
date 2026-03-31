@@ -40,3 +40,17 @@
     mode: "0600"
   when: enable_bgp | bool and (anycast_vip | length > 0 or anycast_vip6 | length > 0)
   notify: Apply netplan
+
+- name: Apply multicast route immediately (Linux)
+  ansible.builtin.command:
+    argv:
+      - ip
+      - -6
+      - route
+      - replace
+      - "{{ networking_mc_route_prefix }}"
+      - dev
+      - "{{ networking_egress_iface }}"
+  register: networking_mc_route_result
+  changed_when: networking_mc_route_result.rc == 0
+  failed_when: false
