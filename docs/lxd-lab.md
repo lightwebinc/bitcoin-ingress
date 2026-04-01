@@ -34,7 +34,7 @@ all:
         ansible_user: ubuntu
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
         egress_mode: ethernet
-        shard_bits: 8
+        shard_bits: 2
         mc_scope: site
         enable_bgp: false
       hosts:
@@ -52,9 +52,37 @@ ansible-playbook -i inventory/hosts.yml site.yml
 
 The `common` role installs `acl` (required for Ansible `become` with system users on Ubuntu), Go, and build dependencies. The `bitcoin-shard-proxy` role clones, builds, and starts the service.
 
-## 4. Refresh bridge MDB on receivers
+## 4. Enable bridge MLD querier (required)
 
-After deployment, receiver VMs need to re-send MLD membership reports to populate the bridge multicast database:
+MLD snooping alone is not sufficient — the bridge must also act as an MLD querier, otherwise it never queries ports for group membership and floods all multicast to all ports. Apply and persist the querier setting on the LXD host:
+
+```bash
+# Apply immediately
+sudo sh -c 'echo 1 > /sys/devices/virtual/net/lxdbr1/bridge/multicast_querier'
+
+# Persist across reboots via a systemd service
+cat << 'EOF' | sudo tee /etc/systemd/system/lxd-bridge-mcast-querier.service
+[Unit]
+Description=Enable MLD querier on lxdbr1 for multicast snooping
+After=sys-devices-virtual-net-lxdbr1.device
+BindsTo=sys-devices-virtual-net-lxdbr1.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'echo 1 > /sys/devices/virtual/net/lxdbr1/bridge/multicast_querier'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload && sudo systemctl enable --now lxd-bridge-mcast-querier.service
+```
+
+Verify: `cat /sys/devices/virtual/net/lxdbr1/bridge/multicast_querier` should print `1`.
+
+## 5. Refresh bridge MDB on receivers
+
+After deployment (and after the querier is active), receiver VMs need to re-send MLD membership reports to populate the bridge multicast database:
 
 ```bash
 for vm in recv1 recv2 recv3; do
@@ -63,7 +91,7 @@ done
 bridge mdb show dev lxdbr1
 ```
 
-## 5. Verify
+## 6. Verify
 
 ```bash
 # Service and health
@@ -91,6 +119,7 @@ lxc exec recv1 -- tcpdump -i enp6s0 -n 'ip6 and udp' -c 8
 | `egress_iface` uses wrong default | Set at host level, not inventory `vars:` block |
 | Ansible `become` fails without ACL support | `acl` package added to `common` role dependencies |
 | Bridge MDB empty after deployment | Restart `mcast-join.service` on all receivers post-deploy |
+| Multicast floods to all receivers despite MLD snooping | Enable `multicast_querier` on the bridge (see step 4) — snooping without a querier never suppresses flooding |
 
 ## Upgrade
 
@@ -98,4 +127,4 @@ lxc exec recv1 -- tcpdump -i enp6s0 -n 'ip6 and udp' -c 8
 ansible-playbook -i inventory/hosts.yml site.yml --tags proxy -e proxy_version=v1.2.0
 ```
 
-After upgrading, restart `mcast-join.service` on receivers again to restore multicast delivery.
+After upgrading, restart `mcast-join.service` on receivers again to restore multicast delivery. Also verify the bridge querier is still active (`systemctl is-active lxd-bridge-mcast-querier.service`).
