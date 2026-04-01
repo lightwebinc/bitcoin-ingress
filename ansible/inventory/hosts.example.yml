@@ -7,9 +7,11 @@ all:
         # Override per-host below as needed.
         ansible_user: ubuntu
         egress_mode: ethernet
-        egress_iface: eth1
         shard_bits: 8
         enable_bgp: false
+        # NOTE: egress_iface must be set per-host (not here) to override the
+        # group_vars/all.yml default. Ansible gives group_vars/all higher
+        # precedence than inventory group vars.
 
       hosts:
         node-01:
@@ -39,3 +41,5 @@ all:
     #       ansible_host: 203.0.113.30
     #       gre_local_ip: 203.0.113.30
     #       gre_inner_ipv6: "2001:db8:2::3/64"
+
+    # For an LXD / local lab example see docs/lxd-lab.md

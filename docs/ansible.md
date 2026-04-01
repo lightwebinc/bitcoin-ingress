@@ -59,6 +59,8 @@ all:
 
 Host-level variables override `group_vars/all.yml`.
 
+> **Important — `egress_iface` precedence**: `group_vars/all.yml` defines `egress_iface: eth1` as a default. Because Ansible gives `group_vars/all` higher precedence than inventory group `vars:` blocks, `egress_iface` **must be set per-host** (under `hosts: <name>:`) to take effect. Setting it only in the inventory `vars:` block will silently use the `group_vars/all.yml` default instead.
+
 ---
 
 ## Variables reference
@@ -154,3 +156,9 @@ The role will git-fetch, check out the new ref, run `make`, copy the binary, and
 
 All roles are fully idempotent. Re-running the playbook is safe and will only apply changes when the
 system state differs from the declared configuration.
+
+---
+
+## LXD / local lab deployment
+
+See [docs/lxd-lab.md](lxd-lab.md) for a complete walkthrough covering SSH key injection, inventory setup, bridge MDB refresh, and known issues specific to LXD-hosted Ubuntu 24.04 VMs.

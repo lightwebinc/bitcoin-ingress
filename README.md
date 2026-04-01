@@ -57,6 +57,7 @@ See [docs/architecture.md](docs/architecture.md) for full topology detail.
 2. **Terraform (generic)** — see [docs/terraform.md](docs/terraform.md)
 3. **Networking (GRE / ethernet)** — see [docs/networking.md](docs/networking.md)
 4. **eBGP AnyCast** — see [docs/bgp-anycast.md](docs/bgp-anycast.md)
+5. **LXD / local lab** — see [docs/lxd-lab.md](docs/lxd-lab.md)
 
 ## Repository layout
 

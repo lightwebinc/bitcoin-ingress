@@ -23,19 +23,31 @@
     group: "{{ proxy_group }}"
     mode: "0755"
 
+- name: Mark install directory as git safe.directory
+  ansible.builtin.command:
+    cmd: git config --global --add safe.directory {{ proxy_install_dir }}
+
 - name: Clone bitcoin-shard-proxy repository
-  ansible.builtin.git:
-    repo: "{{ proxy_repo }}"
-    dest: "{{ proxy_install_dir }}"
-    version: "{{ proxy_version }}"
-    force: false
-  become: true
-  become_user: "{{ proxy_user }}"
-  register: git_result
+  ansible.builtin.shell: |
+    if [ ! -d "{{ proxy_install_dir }}/.git" ]; then
+      git clone "{{ proxy_repo }}" "{{ proxy_install_dir }}"
+    else
+      git -C "{{ proxy_install_dir }}" fetch origin
+      git -C "{{ proxy_install_dir }}" checkout "{{ proxy_version }}"
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Set ownership of install directory after clone
+  ansible.builtin.file:
+    path: "{{ proxy_install_dir }}"
+    owner: "{{ proxy_user }}"
+    group: "{{ proxy_group }}"
+    recurse: true
 
 - name: Build bitcoin-shard-proxy binary
   ansible.builtin.command:
-    cmd: "{{ go_install_dir }}/bin/go build -o {{ proxy_install_dir }}/bitcoin-shard-proxy ."
+    cmd: "{{ go_install_dir }}/bin/go build -buildvcs=false -o {{ proxy_install_dir }}/bitcoin-shard-proxy ."
     chdir: "{{ proxy_install_dir }}"
     creates: "{{ proxy_install_dir }}/bitcoin-shard-proxy"
   environment:
@@ -43,8 +55,9 @@
     CGO_ENABLED: "0"
     GOOS: "{{ 'freebsd' if ansible_os_family == 'FreeBSD' else 'linux' }}"
     GOARCH: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
-  become: true
-  become_user: "{{ proxy_user }}"
+    HOME: "/tmp"
+    GOPATH: "/tmp/gopath"
+    GOCACHE: "/tmp/gocache"
   changed_when: true
 
 - name: Install binary to system bin dir

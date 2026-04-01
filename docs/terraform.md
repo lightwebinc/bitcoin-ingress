@@ -21,9 +21,9 @@ SG, EC2, etc.) and pass the resulting host IP into the module.
 
 ## Requirements
 
-- Terraform 1.6+
+- Terraform 1.6+ **or OpenTofu 1.6+** (fully compatible; install OpenTofu via `https://get.opentofu.org/install-opentofu.sh`)
 - SSH key pair with access to target hosts
-- Ansible installed on the machine running `terraform apply`
+- Ansible installed on the machine running `terraform apply` / `tofu apply`
 
 ---
 
