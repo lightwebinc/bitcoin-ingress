@@ -24,19 +24,17 @@
     mode: "0755"
 
 - name: Mark install directory as git safe.directory
-  ansible.builtin.command:
-    cmd: git config --global --add safe.directory {{ proxy_install_dir }}
+  community.general.git_config:
+    name: safe.directory
+    scope: global
+    value: "{{ proxy_install_dir }}"
 
-- name: Clone bitcoin-shard-proxy repository
-  ansible.builtin.shell: |
-    if [ ! -d "{{ proxy_install_dir }}/.git" ]; then
-      git clone "{{ proxy_repo }}" "{{ proxy_install_dir }}"
-    else
-      git -C "{{ proxy_install_dir }}" fetch origin
-      git -C "{{ proxy_install_dir }}" checkout "{{ proxy_version }}"
-    fi
-  args:
-    executable: /bin/bash
+- name: Clone / update bitcoin-shard-proxy repository
+  ansible.builtin.git:
+    repo: "{{ proxy_repo }}"
+    dest: "{{ proxy_install_dir }}"
+    version: "{{ proxy_version }}"
+    force: false
 
 - name: Set ownership of install directory after clone
   ansible.builtin.file:
