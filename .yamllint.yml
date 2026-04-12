@@ -2,3 +2,7 @@ extends: default
 rules:
   line-length:
     max: 160
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  comments-indentation: disable
