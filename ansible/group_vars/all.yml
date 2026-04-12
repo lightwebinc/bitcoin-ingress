@@ -8,7 +8,7 @@
 # bitcoin-shard-proxy source and build
 # ------------------------------------------------------------
 proxy_repo: "https://github.com/lightwebinc/bitcoin-shard-proxy.git"
-proxy_version: "main"
+proxy_version: "feat/v2-frame-sequencing"
 proxy_install_dir: "/opt/bitcoin-shard-proxy"
 proxy_bin_dir: "/usr/local/bin"
 proxy_user: "bitcoin-proxy"
@@ -23,7 +23,8 @@ go_install_dir: "/usr/local/go"
 # All flags have env-var equivalents set in the service unit
 # ------------------------------------------------------------
 listen_addr: "[::]"
-listen_port: 9000
+udp_listen_port: 9000
+tcp_listen_port: 0
 egress_port: 9001
 shard_bits: 8
 mc_scope: "site"
