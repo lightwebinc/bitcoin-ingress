@@ -19,3 +19,7 @@ AVD-AWS-0131
 # Subnet map_public_ip_on_launch = true
 # Public subnets in this example are intentionally public-facing.
 AVD-AWS-0164
+
+# Security group allows ingress from 0.0.0.0/0 to port 22
+# SSH access is needed for administration; production should restrict source IPs.
+AVD-AWS-0107
