@@ -61,6 +61,7 @@ jobs:
           scan-ref: terraform/
           exit-code: "1"
           severity: HIGH,CRITICAL
+          trivyignores: terraform/examples/aws-ec2/.trivyignore
 
   terraform-validate:
     name: terraform validate

@@ -6,7 +6,7 @@
 # - BSV UDP ingress port must accept connections from any source (public proxy)
 # - BGP port open because the peer IP is not known at deploy time
 # - All-egress rules are standard for outbound-unrestricted nodes
-AVD-AWS-0105
+AVD-AWS-0104
 
 # EC2 instance IMDSv2 not enforced (no metadata_options block)
 # Example omits this for brevity; production deployments should add it.
@@ -14,7 +14,7 @@ AVD-AWS-0028
 
 # Root block device not encrypted
 # Example omits KMS key config for simplicity.
-AVD-AWS-0178
+AVD-AWS-0131
 
 # Subnet map_public_ip_on_launch = true
 # Public subnets in this example are intentionally public-facing.
