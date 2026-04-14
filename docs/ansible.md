@@ -84,6 +84,9 @@ All variables with defaults live in `group_vars/all.yml`.
 | `num_workers`     | `0`         | Worker count (0 = runtime.NumCPU)                |
 | `metrics_addr`    | `:9100`     | HTTP address for /metrics /healthz /readyz       |
 | `otlp_endpoint`   | `""`        | OTLP gRPC endpoint (empty = disabled)            |
+| `drain_timeout`   | `"0s"`      | Pre-drain delay before closing sockets on shutdown; set to `≥` LB health-check interval in production |
+
+> **`TimeoutStopSec` relationship:** `systemd` sends `SIGKILL` after `TimeoutStopSec` if the service has not exited. Ensure `TimeoutStopSec > drain_timeout + 15s` (OTLP flush + drain buffer). The default service unit sets `TimeoutStopSec=30`, which is sufficient for `drain_timeout ≤ 15s`.
 
 ### Networking
 

@@ -33,6 +33,7 @@ num_workers: 0
 metrics_addr: ":9100"
 otlp_endpoint: ""
 otlp_interval: "30s"
+drain_timeout: "0s"           # Pre-drain delay on shutdown; set to ≥ LB health-check interval in production
 proxy_debug: false
 
 # ------------------------------------------------------------
