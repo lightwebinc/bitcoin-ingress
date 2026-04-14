@@ -13,6 +13,7 @@ ExecStartPre=/bin/sh -c '/sbin/ip -6 route add ff00::/8 dev {{ egress_iface if e
 ExecStart={{ proxy_bin_dir }}/bitcoin-shard-proxy
 Restart=on-failure
 RestartSec=5
+TimeoutStopSec=30
 LimitNOFILE=65536
 
 # Hardening
