@@ -7,8 +7,8 @@ terraform {
 # No resources are created here — it is a pure variable aggregation helper.
 
 locals {
-  bgp_vars = var.enable_bgp ? {
-    enable_bgp      = "true"
+  bgp_vars = {
+    enable_bgp      = tostring(var.enable_bgp)
     bgp_daemon      = var.bgp_daemon
     bgp_prefix      = var.bgp_prefix
     bgp_vip         = var.bgp_vip
@@ -22,5 +22,5 @@ locals {
     bgp_hold_time   = tostring(var.bgp_hold_time)
     bgp_keepalive   = tostring(var.bgp_keepalive)
     bgp_password    = var.bgp_password
-  } : { enable_bgp = "false" }
+  }
 }
