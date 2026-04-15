@@ -18,9 +18,9 @@ and individually replaceable.
 
 ```text
                         ┌─────────────────────────────────────────┐
-                        │  BSV Senders (wallets, apps, services)  │
+                        │  BSV Senders (miners, services)         │
                         └────────────┬────────────────────────────┘
-                                     │  UDP / TCP (BRC-12 frames)
+                                     │  UDP / TCP (BRC-12 / V2 frames)
                     ┌────────────────┼────────────────┐
                     │                │                │
               ┌─────▼──┐       ┌─────▼──┐       ┌─────▼──┐
@@ -33,7 +33,7 @@ and individually replaceable.
                         ┌────────────▼────────────────────────────┐
                         │         Multicast fabric                │
                         │  (site-scoped, FF05::/16)               │
-                        └────┬──────────┬──────────┬─────────────┘
+                        └────┬──────────┬──────────┬──────────────┘
                              │          │          │
                         ┌────▼──┐  ┌────▼──┐  ┌────▼──┐
                         │miners │  │exch-  │  │other  │   ← multicast subscribers
@@ -51,10 +51,20 @@ derivation formula and address format.
 Subscribers join only the groups covering the shard ranges they care about. Increasing `shard_bits`
 by 1 splits each existing group into two children — existing joins remain valid.
 
+## Subtree-based sharding
+
+In addition to using a fixed number of shards, we can further divide traffic flows into subtree-flows using subtree identifiers set by miners and transaction processors. This allows for more flexible sharding and can be used to shard by transaction type, specialty, or other criteria. The details of this mechanism are still being worked out, particularly the deterministic mapping of the 32 byte subtree identifier to multicast group address scheme. The V2 frame format includes a field for the subtree ID already.
+
+## Sequence numbering
+
+The V2 frame format includes a sequence number field that can be used to track the order of transactions within a shard. This can be used by receivers to detect missing transactions and request retransmission. It is still yet to be determined if this field should be set only by the transmission originator (i.e. miners, transaction processors, infrastructure services, exchanges, etc.) or if it should be set by the ingress node in the case that an originator leaves this field blank, or uses the standard BRC-12 transaction format without these fields.
+
+The sequence numbering needs to be monotonic. This introduces potential complexity in coordination among proxy workers on a single system, and also between proxy systems.
+
 ## BGP ingress (optional)
 
-When `enable_bgp: true`, each ingress node announces a shared anycast IPv4 or IPv6 prefix via eBGP
-to its upstream provider. All nodes announce the same prefix, so senders are routed to the
+When `enable_bgp: true`, each ingress node announces IPv4 or IPv6 prefixes via eBGP
+to its upstream provider. All nodes can announce the same prefixes, so senders are routed to the
 topologically nearest proxy by BGP best-path selection.
 
 ```text
