@@ -10,10 +10,10 @@ locals {
   bgp_vars = var.enable_bgp ? {
     enable_bgp      = "true"
     bgp_daemon      = var.bgp_daemon
-    bgp_prefix  = var.bgp_prefix
-    bgp_vip     = var.bgp_vip
-    bgp_prefix6 = var.bgp_prefix6
-    bgp_vip6    = var.bgp_vip6
+    bgp_prefix      = var.bgp_prefix
+    bgp_vip         = var.bgp_vip
+    bgp_prefix6     = var.bgp_prefix6
+    bgp_vip6        = var.bgp_vip6
     bgp_local_as    = tostring(var.bgp_local_as)
     bgp_peer_as     = tostring(var.bgp_peer_as)
     bgp_peer_ip     = var.bgp_peer_ip
