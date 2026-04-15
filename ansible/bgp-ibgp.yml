@@ -1,5 +1,6 @@
 ---
-- hosts: bgp_ibgp_nodes
+- name: Configure iBGP on upstream peer nodes
+  hosts: bgp_ibgp_nodes
   become: true
   roles:
     - role: common
