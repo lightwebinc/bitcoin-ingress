@@ -1,0 +1,6 @@
+---
+- hosts: bgp_ibgp_nodes
+  become: true
+  roles:
+    - role: common
+    - role: bgp-ibgp

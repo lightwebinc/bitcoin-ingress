@@ -43,3 +43,22 @@ all:
     #       gre_inner_ipv6: "2001:db8:2::3/64"
 
     # For an LXD / local lab example see docs/lxd-lab.md
+
+    # iBGP upstream peers — run bgp-ibgp.yml against this group
+    # bgp_ibgp_nodes:
+    #   vars:
+    #     ansible_user: ubuntu
+    #     bgp_daemon: bird2
+    #   hosts:
+    #     core-router-01:
+    #       ansible_host: 10.0.0.1
+    #       bgp_router_id: 10.0.0.1
+    #       anycast_prefix: "192.0.2.0/24"
+    #       anycast_prefix6: "2001:db8::/48"
+    #       bgp_ibgp_peers:
+    #         # v4-only peer
+    #         - { peer_ip: "10.0.1.1", description: "proxy-node-01" }
+    #         # v6-only peer
+    #         - { peer_ip6: "fd00::1", description: "proxy-node-02" }
+    #         # dual-stack peer
+    #         - { peer_ip: "10.0.1.3", peer_ip6: "fd00::3", description: "proxy-node-03" }

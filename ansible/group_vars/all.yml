@@ -78,3 +78,9 @@ bgp_router_id: "{{ ansible_default_ipv4.address }}"
 bgp_hold_time: 90
 bgp_keepalive: 30
 bgp_password: ""
+
+# iBGP peers (used by the bgp-ibgp role, playbook: bgp-ibgp.yml)
+# Each entry: { peer_ip: "", peer_ip6: "", description: "" }
+# At least one of peer_ip or peer_ip6 is required per entry.
+# Include both for dual-stack peers.
+bgp_ibgp_peers: []

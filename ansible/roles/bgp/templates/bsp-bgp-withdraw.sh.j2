@@ -1,0 +1,24 @@
+#!/bin/sh
+# BGP route withdrawal — called by bitcoin-shard-proxy.service ExecStop
+# Immediately withdraws all ingress BGP sessions before proxy stops.
+# Managed by Ansible — do not edit manually
+
+{% if bgp_daemon == 'bird2' %}
+{% if bgp_peer_ip | length > 0 %}
+birdc 'disable protocol upstream4' > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+birdc 'disable protocol upstream6' > /dev/null 2>&1 || true
+{% endif %}
+{% else %}
+{% if bgp_peer_ip | length > 0 %}
+vtysh -c "configure terminal" \
+      -c "router bgp {{ bgp_local_as }}" \
+      -c "neighbor {{ bgp_peer_ip }} shutdown" > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+vtysh -c "configure terminal" \
+      -c "router bgp {{ bgp_local_as }}" \
+      -c "neighbor {{ bgp_peer_ip6 }} shutdown" > /dev/null 2>&1 || true
+{% endif %}
+{% endif %}

@@ -8,9 +8,23 @@ HEALTH_URL="http://127.0.0.1:{{ metrics_addr | regex_replace('^:', '') | default
 
 if curl -sf --max-time 3 "${HEALTH_URL}" > /dev/null 2>&1; then
 {% if bgp_daemon == 'bird2' %}
-  birdc 'show protocols' > /dev/null 2>&1 || true
+{% if bgp_peer_ip | length > 0 %}
+  birdc 'enable protocol upstream4' > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+  birdc 'enable protocol upstream6' > /dev/null 2>&1 || true
+{% endif %}
 {% else %}
-  vtysh -c 'show bgp summary' > /dev/null 2>&1 || true
+{% if bgp_peer_ip | length > 0 %}
+  vtysh -c "configure terminal" \
+        -c "router bgp {{ bgp_local_as }}" \
+        -c "no neighbor {{ bgp_peer_ip }} shutdown" > /dev/null 2>&1 || true
+{% endif %}
+{% if bgp_peer_ip6 | length > 0 %}
+  vtysh -c "configure terminal" \
+        -c "router bgp {{ bgp_local_as }}" \
+        -c "no neighbor {{ bgp_peer_ip6 }} shutdown" > /dev/null 2>&1 || true
+{% endif %}
 {% endif %}
 else
 {% if bgp_daemon == 'bird2' %}
@@ -22,10 +36,14 @@ else
 {% endif %}
 {% else %}
 {% if bgp_peer_ip | length > 0 %}
-  vtysh -c 'clear ip bgp {{ bgp_peer_ip }} soft out' > /dev/null 2>&1 || true
+  vtysh -c "configure terminal" \
+        -c "router bgp {{ bgp_local_as }}" \
+        -c "neighbor {{ bgp_peer_ip }} shutdown" > /dev/null 2>&1 || true
 {% endif %}
 {% if bgp_peer_ip6 | length > 0 %}
-  vtysh -c 'clear bgp ipv6 {{ bgp_peer_ip6 }} soft out' > /dev/null 2>&1 || true
+  vtysh -c "configure terminal" \
+        -c "router bgp {{ bgp_local_as }}" \
+        -c "neighbor {{ bgp_peer_ip6 }} shutdown" > /dev/null 2>&1 || true
 {% endif %}
 {% endif %}
 fi

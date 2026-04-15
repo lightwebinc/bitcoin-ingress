@@ -93,32 +93,43 @@ protocol static anycast6 {
   route {{ anycast_prefix6 }} blackhole;  # set when anycast_prefix6 is non-empty
 }
 
+# Prefix-set filters (conditionally defined when the prefix var is set)
+define ANYCAST4_PFXS = [ {{ anycast_prefix }} ];
+filter export_anycast4 { if net ~ ANYCAST4_PFXS then accept; reject; }
+
+define ANYCAST6_PFXS = [ {{ anycast_prefix6 }} ];
+filter export_anycast6 { if net ~ ANYCAST6_PFXS then accept; reject; }
+
+filter accept_none { reject; }
+
 # Separate BGP sessions per peer address family
 protocol bgp upstream4 {
   local as {{ bgp_local_as }};
   neighbor {{ bgp_peer_ip }} as {{ bgp_peer_as }};  # only when bgp_peer_ip set
   ...
-  ipv4 { import none; export filter { if proto = "anycast4" then accept; reject; }; };
+  ipv4 { import filter accept_none; export filter export_anycast4; };
 }
 
 protocol bgp upstream6 {
   local as {{ bgp_local_as }};
   neighbor {{ bgp_peer_ip6 }} as {{ bgp_peer_as }}; # only when bgp_peer_ip6 set
   ...
-  ipv6 { import none; export filter { if proto = "anycast6" then accept; reject; }; };
+  ipv6 { import filter accept_none; export filter export_anycast6; };
 }
 ```
 
 ### Service check integration (BIRD2)
 
-The `bgp` role installs a health-check script that disables both BGP sessions if the proxy
-metrics endpoint (`/healthz`) returns non-200, triggering withdrawal of both v4 and v6 prefixes:
+The `bgp` role installs a health-check script (`/usr/local/bin/bsp-bgp-check.sh`) that:
+
+- **Healthy** — re-enables both BGP sessions (no-op if they were already up).
+- **Unhealthy** — disables both sessions, triggering immediate prefix withdrawal.
 
 ```bash
-# /usr/local/bin/bsp-bgp-check.sh
-#!/bin/sh
+# /usr/local/bin/bsp-bgp-check.sh (BIRD2 path)
 if curl -sf http://127.0.0.1:9100/healthz > /dev/null 2>&1; then
-  birdc 'show protocols' > /dev/null 2>&1 || true
+  birdc 'enable protocol upstream4' > /dev/null 2>&1 || true
+  birdc 'enable protocol upstream6' > /dev/null 2>&1 || true
 else
   birdc 'disable protocol upstream4' > /dev/null 2>&1 || true
   birdc 'disable protocol upstream6' > /dev/null 2>&1 || true
@@ -193,14 +204,142 @@ bgpd_enable="YES"
 ### Service check integration (FRR)
 
 ```bash
-# /usr/local/bin/bsp-bgp-check.sh
-#!/bin/sh
+# /usr/local/bin/bsp-bgp-check.sh (FRR path)
 if curl -sf http://127.0.0.1:9100/healthz > /dev/null 2>&1; then
-  vtysh -c 'show bgp summary' > /dev/null 2>&1 || true
+  # Re-enable sessions shut down by a previous health failure
+  vtysh -c "configure terminal" -c "router bgp $AS" -c "no neighbor $PEER_IP shutdown"
+  vtysh -c "configure terminal" -c "router bgp $AS" -c "no neighbor $PEER_IP6 shutdown"
 else
-  vtysh -c 'clear ip bgp {{ bgp_peer_ip }} soft out' > /dev/null 2>&1 || true    # IPv4 peer
-  vtysh -c 'clear bgp ipv6 {{ bgp_peer_ip6 }} soft out' > /dev/null 2>&1 || true # IPv6 peer
+  # Shut down sessions — peer withdraws routes it learned from us
+  vtysh -c "configure terminal" -c "router bgp $AS" -c "neighbor $PEER_IP shutdown"
+  vtysh -c "configure terminal" -c "router bgp $AS" -c "neighbor $PEER_IP6 shutdown"
 fi
+```
+
+---
+
+## Service Ordering
+
+When `enable_bgp: true`, the `bitcoin-shard-proxy.service` unit gains two extra directives:
+
+```ini
+[Unit]
+# Ensures the BGP daemon stops *after* the proxy — so the daemon can process
+# the withdrawal before it exits.
+Before=bird.service   # or Before=frr.service when bgp_daemon == frr
+
+[Service]
+# Called synchronously before the process is killed.
+# Withdraws all BGP sessions immediately so route propagation starts
+# as early as possible during a graceful stop.
+ExecStop=/usr/local/bin/bsp-bgp-withdraw.sh
+```
+
+The `bsp-bgp-withdraw.sh` script is deployed by the `bgp` role to `/usr/local/bin/` alongside
+the health-check script.
+
+---
+
+## iBGP
+
+The `bgp-ibgp` role (`roles/bgp-ibgp/`) configures iBGP sessions on **upstream peer nodes**
+(e.g. core routers) so they learn the anycast prefix from the ingress proxy nodes. It is run
+by the separate `ansible/bgp-ibgp.yml` playbook against the `bgp_ibgp_nodes` inventory group.
+
+### Variables
+
+```yaml
+# Per-host list of iBGP peers (same AS as bgp_local_as)
+bgp_ibgp_peers:
+  # At least one of peer_ip or peer_ip6 is required per entry.
+  # Include both for dual-stack peers.
+  - { peer_ip: "10.0.1.1", description: "proxy-node-01" }          # v4 only
+  - { peer_ip6: "fd00::1", description: "proxy-node-02" }          # v6 only
+  - { peer_ip: "10.0.1.3", peer_ip6: "fd00::3", description: "proxy-node-03" } # dual-stack
+```
+
+The `bgp_local_as`, `anycast_prefix`, `anycast_prefix6`, `bgp_hold_time`, `bgp_keepalive`,
+and `bgp_password` variables are shared with the existing `bgp` role.
+
+### BIRD2 iBGP session pattern
+
+For each peer entry the template generates one or two `protocol bgp` blocks:
+
+```bird
+# Peer with peer_ip set
+protocol bgp ibgp_0_v4 {
+  local as 65001;
+  neighbor 10.0.1.1 as 65001;   # same AS = iBGP
+  ...
+  ipv4 { next hop self; import filter accept_none; export filter export_anycast4; };
+}
+
+# Peer with peer_ip6 set
+protocol bgp ibgp_0_v6 {
+  local as 65001;
+  neighbor fd00::3 as 65001;
+  ...
+  ipv6 { next hop self; import filter accept_none; export filter export_anycast6; };
+}
+```
+
+### FRR iBGP session pattern
+
+```frr
+router bgp 65001
+ neighbor 10.0.1.1 remote-as 65001
+ neighbor 10.0.1.1 update-source 192.0.2.1  ! if anycast_vip set
+ neighbor fd00::3  remote-as 65001
+ neighbor fd00::3  update-source 2001:db8::1 ! if anycast_vip6 set
+ !
+ address-family ipv4 unicast
+  network 192.0.2.0/24
+  neighbor 10.0.1.1 next-hop-self
+  neighbor 10.0.1.1 route-map EXPORT4 out
+  neighbor 10.0.1.1 route-map DENY in
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 2001:db8::/48
+  neighbor fd00::3  next-hop-self
+  neighbor fd00::3  route-map EXPORT6 out
+  neighbor fd00::3  route-map DENY in
+ exit-address-family
+```
+
+---
+
+## Egress BGP
+
+BGP is **not used on the egress side**. Egress delivers IPv6 multicast frames to receivers over
+physical interfaces or ip6gre tunnels:
+
+- **MLD** (Multicast Listener Discovery) handles group membership on each egress interface.
+- **PIM** handles multicast tree building across L3 boundaries if needed.
+- ip6gre tunnel endpoints require only unicast reachability (static route / directly connected),
+  which is already handled by the `networking` role.
+- Egress is one-way; receivers do not send unicast traffic back to the proxy.
+
+If a future use case requires advertising a unicast prefix downstream over GRE6, that can be
+added as a separate `bgp-ebgp` role at that time.
+
+---
+
+## Playbooks
+
+| Playbook | Target group | Role | Purpose |
+|---|---|---|---|
+| `ansible/site.yml` | `ingress_nodes` | `bgp` (conditional) | eBGP anycast on ingress proxy nodes |
+| `ansible/bgp-ibgp.yml` | `bgp_ibgp_nodes` | `bgp-ibgp` | iBGP on upstream peer nodes |
+
+Run independently:
+
+```bash
+# Deploy eBGP on ingress nodes
+ansible-playbook -i inventory/hosts.yml site.yml
+
+# Deploy iBGP on upstream peer nodes
+ansible-playbook -i inventory/hosts.yml bgp-ibgp.yml
 ```
 
 ---

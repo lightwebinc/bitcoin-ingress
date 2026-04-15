@@ -1,0 +1,51 @@
+---
+- name: Install BIRD2 (Ubuntu/Debian)
+  ansible.builtin.apt:
+    name: bird2
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install BIRD2 (FreeBSD)
+  community.general.pkgng:
+    name: bird2
+    state: present
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Create BIRD2 config directory (FreeBSD)
+  ansible.builtin.file:
+    path: /usr/local/etc/bird
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0750"
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Deploy BIRD2 iBGP configuration
+  ansible.builtin.template:
+    src: bird2-ibgp.conf.j2
+    dest: "{{ '/usr/local/etc/bird/bird.conf' if ansible_os_family == 'FreeBSD' else '/etc/bird/bird.conf' }}"
+    owner: root
+    group: root
+    mode: "0640"
+    validate: "bird -p -c %s"
+  notify: Restart bird
+
+- name: Enable and start BIRD2 (Linux)
+  ansible.builtin.systemd:
+    name: bird
+    enabled: true
+    state: started
+  when: ansible_os_family != 'FreeBSD'
+
+- name: Enable BIRD2 in rc.conf (FreeBSD)
+  ansible.builtin.lineinfile:
+    path: /etc/rc.conf
+    regexp: '^bird_enable='
+    line: 'bird_enable="YES"'
+  when: ansible_os_family == 'FreeBSD'
+
+- name: Start BIRD2 (FreeBSD)
+  ansible.builtin.service:
+    name: bird
+    state: started
+  when: ansible_os_family == 'FreeBSD'

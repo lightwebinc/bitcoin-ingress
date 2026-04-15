@@ -1,0 +1,10 @@
+---
+- name: Restart bird
+  ansible.builtin.service:
+    name: bird
+    state: restarted
+
+- name: Restart frr
+  ansible.builtin.service:
+    name: frr
+    state: restarted

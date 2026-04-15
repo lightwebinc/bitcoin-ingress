@@ -2,6 +2,14 @@
 - name: Install and configure BGP daemon
   ansible.builtin.include_tasks: "{{ bgp_daemon }}.yml"
 
+- name: Deploy BGP withdraw script
+  ansible.builtin.template:
+    src: bsp-bgp-withdraw.sh.j2
+    dest: /usr/local/bin/bsp-bgp-withdraw.sh
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Deploy BGP health-check script
   ansible.builtin.template:
     src: bsp-bgp-check.sh.j2
