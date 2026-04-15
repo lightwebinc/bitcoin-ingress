@@ -37,7 +37,7 @@ Internet / BSV senders
 └──────────────────────────────────────────────┘
 ```
 
-Optional eBGP on the ingress interface advertises a shared prefix from all proxy nodes,
+Optional eBGP on the ingress interface advertises shared prefixes from all proxy nodes,
 allowing senders to reach the nearest proxy automatically.
 
 See [docs/architecture.md](docs/architecture.md) for full topology detail.
