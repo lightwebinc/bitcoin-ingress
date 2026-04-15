@@ -171,14 +171,18 @@ The role joins the list into a comma-separated string and passes it to the `-ifa
 
 ## Ingress interface
 
-The ingress (sender-facing) interface is where `bitcoin-shard-proxy` listens for BRC-12 UDP frames.
+The ingress (sender-facing) interface is where `bitcoin-shard-proxy` listens for BRC-12 frames.
 This is typically the default route interface and requires no special configuration beyond reachability
 from senders.
 
 ```yaml
-listen_addr: "[::]"     # bind all interfaces
-listen_port: 9000
+listen_addr: "[::]"       # bind all interfaces
+udp_listen_port: 9000     # UDP ingress (always active)
+tcp_listen_port: 0        # TCP ingress for reliable delivery (0 = disabled)
 ```
 
-If eBGP AnyCast is enabled, the ingress interface IP (or anycast VIP) is announced via BGP.
-See [bgp-anycast.md](bgp-anycast.md).
+Both transports share the same forwarding pipeline; they can run simultaneously. Enable TCP by setting
+`tcp_listen_port` to a non-zero port value.
+
+If eBGP is enabled, the ingress interface IP (or anycast VIP) is announced via BGP.
+See [bgp.md](bgp.md).

@@ -42,7 +42,7 @@ sudo tail -f /var/log/messages | grep bitcoin_shard_proxy
 
 - Ingress interface: dual-stack (DHCP + SLAAC), set via `ifconfig_<iface>` and `ifconfig_<iface>_ipv6` in `/etc/rc.conf`.
 - GRE tunnels: IPv6-only (`gif0`), using `cloned_interfaces="gif0"` and `ifconfig_gif0="tunnel <local_ipv6> <remote_ipv6>"` in `/etc/rc.conf`.
-- AnyCast VIPs: `ifconfig_lo0_alias0` (IPv4) and `ifconfig_lo0_alias1` (IPv6) in `/etc/rc.conf`.
+- BGP VIPs: `ifconfig_lo0_alias0` (IPv4) and `ifconfig_lo0_alias1` (IPv6) in `/etc/rc.conf`.
 - IPv4/IPv6 forwarding enabled via `gateway_enable="YES"` and `ipv6_gateway_enable="YES"`.
 
 Apply interface changes without rebooting:

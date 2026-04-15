@@ -39,7 +39,7 @@ bitcoin_shard_proxy_prestart()
     if [ -f "${bitcoin_shard_proxy_config}" ]; then
         . "${bitcoin_shard_proxy_config}"
     fi
-    export LISTEN_ADDR LISTEN_PORT EGRESS_PORT MULTICAST_IF SHARD_BITS
+    export LISTEN_ADDR UDP_LISTEN_PORT TCP_LISTEN_PORT EGRESS_PORT MULTICAST_IF SHARD_BITS
     export MC_SCOPE MC_BASE_ADDR NUM_WORKERS METRICS_ADDR
     export OTLP_ENDPOINT OTLP_INTERVAL DEBUG
 

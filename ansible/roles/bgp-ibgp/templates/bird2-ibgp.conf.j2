@@ -1,6 +1,6 @@
-# BIRD2 iBGP configuration for bitcoin-ingress AnyCast
+# BIRD2 iBGP configuration for bitcoin-ingress BGP
 # Managed by Ansible — do not edit manually
-# Role: upstream iBGP peer (same AS, advertises anycast prefix inward)
+# Role: upstream iBGP peer (same AS, advertises BGP prefix inward)
 
 router id {{ bgp_router_id }};
 
@@ -20,29 +20,29 @@ protocol kernel {
   };
 }
 
-{% if anycast_prefix | length > 0 %}
-define ANYCAST4_PFXS = [ {{ anycast_prefix }} ];
-filter export_anycast4 {
-  if net ~ ANYCAST4_PFXS then accept;
+{% if bgp_prefix | length > 0 %}
+define BGP4_PFXS = [ {{ bgp_prefix }} ];
+filter export_bgp4 {
+  if net ~ BGP4_PFXS then accept;
   reject;
 }
 
-protocol static anycast4 {
+protocol static bgp4 {
   ipv4;
-  route {{ anycast_prefix }} blackhole;
+  route {{ bgp_prefix }} blackhole;
 }
 {% endif %}
 
-{% if anycast_prefix6 | length > 0 %}
-define ANYCAST6_PFXS = [ {{ anycast_prefix6 }} ];
-filter export_anycast6 {
-  if net ~ ANYCAST6_PFXS then accept;
+{% if bgp_prefix6 | length > 0 %}
+define BGP6_PFXS = [ {{ bgp_prefix6 }} ];
+filter export_bgp6 {
+  if net ~ BGP6_PFXS then accept;
   reject;
 }
 
-protocol static anycast6 {
+protocol static bgp6 {
   ipv6;
-  route {{ anycast_prefix6 }} blackhole;
+  route {{ bgp_prefix6 }} blackhole;
 }
 {% endif %}
 
@@ -63,8 +63,8 @@ protocol bgp ibgp_{{ loop.index0 }}_v4 {
   ipv4 {
     next hop self;
     import filter accept_none;
-{% if anycast_prefix | length > 0 %}
-    export filter export_anycast4;
+{% if bgp_prefix | length > 0 %}
+    export filter export_bgp4;
 {% else %}
     export filter accept_none;
 {% endif %}
@@ -85,8 +85,8 @@ protocol bgp ibgp_{{ loop.index0 }}_v6 {
   ipv6 {
     next hop self;
     import filter accept_none;
-{% if anycast_prefix6 | length > 0 %}
-    export filter export_anycast6;
+{% if bgp_prefix6 | length > 0 %}
+    export filter export_bgp6;
 {% else %}
     export filter accept_none;
 {% endif %}

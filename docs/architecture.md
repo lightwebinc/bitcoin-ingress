@@ -5,7 +5,7 @@
 `bitcoin-ingress` deploys and configures `bitcoin-shard-proxy` nodes that form the ingress tier of a
 Bitcoin SV multicast distribution fabric. Each node:
 
-1. Receives raw BRC-12 UDP transaction frames from BSV senders on the public internet.
+1. Receives raw BRC-12 transaction frames from BSV senders on the public internet (UDP by default; TCP ingress is optional for reliable delivery).
 2. Derives an IPv6 multicast group address from the transaction ID shard key.
 3. Retransmits the datagram to the derived group over one or more egress interfaces connected to the
    multicast fabric.
@@ -20,7 +20,7 @@ and individually replaceable.
                         ┌─────────────────────────────────────────┐
                         │  BSV Senders (wallets, apps, services)  │
                         └────────────┬────────────────────────────┘
-                                     │  UDP unicast (BRC-12 frames)
+                                     │  UDP / TCP (BRC-12 frames)
                     ┌────────────────┼────────────────┐
                     │                │                │
               ┌─────▼──┐       ┌─────▼──┐       ┌─────▼──┐
@@ -51,17 +51,17 @@ derivation formula and address format.
 Subscribers join only the groups covering the shard ranges they care about. Increasing `shard_bits`
 by 1 splits each existing group into two children — existing joins remain valid.
 
-## AnyCast ingress (optional)
+## BGP ingress (optional)
 
 When `enable_bgp: true`, each ingress node announces a shared anycast IPv4 or IPv6 prefix via eBGP
 to its upstream provider. All nodes announce the same prefix, so senders are routed to the
 topologically nearest proxy by BGP best-path selection.
 
 ```text
-Sender ──BGP anycast──► nearest ingress node ──multicast──► fabric
+Sender ──BGP──► nearest ingress node ──multicast──► fabric
 ```
 
-See [bgp-anycast.md](bgp-anycast.md) for configuration details.
+See [bgp.md](bgp.md) for configuration details.
 
 ## Egress interface options
 
@@ -80,10 +80,10 @@ See [networking.md](networking.md) for interface configuration.
 internet ──[eth0]── proxy node ──[eth1]── multicast fabric
 ```
 
-### Multi-node AnyCast pool (GRE egress)
+### Multi-node BGP pool (GRE egress)
 
 ```text
-internet ──anycast──► node-A ──GRE──┐
+internet ──BGP──► node-A ──GRE──┐
                     ► node-B ──GRE──┼──► fabric router ──► fabric
                     ► node-C ──GRE──┘
 ```

@@ -2,15 +2,7 @@
 
 This guide covers deploying `bitcoin-shard-proxy` onto LXD VMs using the Ansible playbook in this repo. It is written for use with the [bitcoin-multicast-test](https://github.com/lightwebinc/bitcoin-multicast-test) lab topology but applies to any LXD-hosted Ubuntu 24.04 VM.
 
-> **Branch note (`feat/v2-frame-sequencing`):** This branch deploys the proxy from the `feat/v2-frame-sequencing` branch of `bitcoin-shard-proxy` (`proxy_version` in `group_vars/all.yml`). Two config env-var differences from `main`:
->
-> | Variable | `main` | `feat/v2-frame-sequencing` |
-> |----------|--------|----------------------------|
-> | `LISTEN_PORT` | present | **removed** |
-> | `UDP_LISTEN_PORT` | absent | **added** (replaces `LISTEN_PORT`) |
-> | `TCP_LISTEN_PORT` | absent | **added** (0 = disabled) |
->
-> No other deployment steps change. To deploy against `main` instead, set `proxy_version: "main"` and revert the env-var names in `config.env.j2`.
+> **Version note:** `proxy_version` in `group_vars/all.yml` controls which git ref is checked out. The current default is `feat/v2-frame-sequencing`. The config template uses `UDP_LISTEN_PORT` and `TCP_LISTEN_PORT`; these are the correct environment variable names for that branch and for any later branch that includes TCP ingress support.
 
 ## Prerequisites
 

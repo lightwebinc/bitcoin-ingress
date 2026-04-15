@@ -33,19 +33,19 @@
       ifconfig_gif0_ipv6="inet6 {{ gre_inner_ipv6 }}"
   when: egress_mode == 'gre'
 
-- name: Configure IPv4 AnyCast loopback VIP in rc.conf (FreeBSD)
+- name: Configure IPv4 BGP loopback VIP in rc.conf (FreeBSD)
   ansible.builtin.lineinfile:
     path: /etc/rc.conf
     regexp: '^ifconfig_lo0_alias0='
-    line: 'ifconfig_lo0_alias0="inet {{ anycast_vip }} netmask 255.255.255.255"'
-  when: enable_bgp | bool and anycast_vip | length > 0
+    line: 'ifconfig_lo0_alias0="inet {{ bgp_vip }} netmask 255.255.255.255"'
+  when: enable_bgp | bool and bgp_vip | length > 0
 
-- name: Configure IPv6 AnyCast loopback VIP in rc.conf (FreeBSD)
+- name: Configure IPv6 BGP loopback VIP in rc.conf (FreeBSD)
   ansible.builtin.lineinfile:
     path: /etc/rc.conf
     regexp: '^ifconfig_lo0_alias1='
-    line: 'ifconfig_lo0_alias1="inet6 {{ anycast_vip6 }} prefixlen 128"'
-  when: enable_bgp | bool and anycast_vip6 | length > 0
+    line: 'ifconfig_lo0_alias1="inet6 {{ bgp_vip6 }} prefixlen 128"'
+  when: enable_bgp | bool and bgp_vip6 | length > 0
 
 - name: Add persistent multicast route for egress interface in rc.conf (FreeBSD)
   ansible.builtin.lineinfile:

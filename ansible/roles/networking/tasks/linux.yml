@@ -31,14 +31,14 @@
   when: egress_mode == 'gre'
   notify: Apply netplan
 
-- name: Deploy AnyCast VIP netplan config
+- name: Deploy BGP VIP netplan config
   ansible.builtin.template:
     src: netplan-vip.yaml.j2
     dest: /etc/netplan/62-bitcoin-ingress-vip.yaml
     owner: root
     group: root
     mode: "0600"
-  when: enable_bgp | bool and (anycast_vip | length > 0 or anycast_vip6 | length > 0)
+  when: enable_bgp | bool and (bgp_vip | length > 0 or bgp_vip6 | length > 0)
   notify: Apply netplan
 
 - name: Apply multicast route immediately (Linux)

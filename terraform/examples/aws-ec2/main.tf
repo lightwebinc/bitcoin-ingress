@@ -194,7 +194,7 @@ resource "aws_instance" "ingress_node" {
   })
 }
 
-# Optional Elastic IPs (for AnyCast or stable inbound addressing)
+# Optional Elastic IPs (for stable inbound addressing)
 resource "aws_eip" "ingress_node" {
   count  = var.allocate_eips ? var.instance_count : 0
   domain = "vpc"
@@ -224,17 +224,17 @@ locals {
 }
 
 # ---------------------------------------------------------------
-# BGP AnyCast variable aggregation
+# BGP variable aggregation
 # ---------------------------------------------------------------
 module "bgp" {
   source = "../../modules/bgp-anycast"
 
   enable_bgp      = var.enable_bgp
   bgp_daemon      = var.bgp_daemon
-  anycast_prefix  = var.anycast_prefix
-  anycast_vip     = var.anycast_vip
-  anycast_prefix6 = var.anycast_prefix6
-  anycast_vip6    = var.anycast_vip6
+  bgp_prefix  = var.bgp_prefix
+  bgp_vip     = var.bgp_vip
+  bgp_prefix6 = var.bgp_prefix6
+  bgp_vip6    = var.bgp_vip6
   bgp_local_as    = var.bgp_local_as
   bgp_peer_as     = var.bgp_peer_as
   bgp_peer_ip     = var.bgp_peer_ip

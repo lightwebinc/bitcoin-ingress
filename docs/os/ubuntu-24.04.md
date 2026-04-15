@@ -38,7 +38,7 @@ sudo systemctl restart bitcoin-shard-proxy
 
 - Egress interface configuration is written to `/etc/netplan/60-bitcoin-ingress.yaml`.
 - GRE tunnels use `/etc/netplan/61-bitcoin-ingress-gre.yaml`.
-- AnyCast VIP is written to `/etc/netplan/62-bitcoin-ingress-vip.yaml`.
+- BGP VIP is written to `/etc/netplan/62-bitcoin-ingress-vip.yaml`.
 - IPv6 forwarding is enabled via `/etc/sysctl.d/60-bitcoin-ingress.conf`.
 
 Apply netplan changes manually if needed:

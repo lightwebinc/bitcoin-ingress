@@ -8,7 +8,7 @@ The Terraform layer is split into reusable **modules** and deployment **examples
 terraform/
 ├── modules/
 │   ├── ingress-node/       Cloud-agnostic: provisions via SSH remote-exec + Ansible
-│   └── bgp-anycast/        BGP AnyCast config helper (passes vars to Ansible)
+│   └── bgp-anycast/        BGP config helper (passes vars to Ansible)
 └── examples/
     ├── generic/            Any SSH-accessible host (no cloud provider)
     └── aws-ec2/            AWS: VPC, SG, EC2 Ubuntu 24.04, optional EIP
@@ -65,7 +65,7 @@ enable_bgp   = false
 ## AWS EC2 example
 
 Provisions a VPC, security group, EC2 instance(s) running Ubuntu 24.04, and optionally an Elastic
-IP for AnyCast.
+IP for stable inbound addressing.
 
 ```bash
 cd terraform/examples/aws-ec2/
@@ -92,7 +92,7 @@ egress_mode  = "gre"
 gre_remote_ip = "198.51.100.1"
 
 enable_bgp      = false
-anycast_prefix  = ""
+bgp_prefix  = ""
 ```
 
 ---
@@ -131,7 +131,7 @@ resource "null_resource" "provision" {
 
 ---
 
-## Module: `bgp-anycast`
+## Module: `bgp-anycast` (BGP)
 
 A thin helper that constructs the BGP-related `extra_vars` map from structured inputs, for use with
 the `ingress-node` module.
@@ -141,8 +141,8 @@ module "bgp" {
   source         = "../../modules/bgp-anycast"
   enable_bgp     = true
   bgp_daemon     = "bird2"
-  anycast_prefix = "192.0.2.0/24"
-  anycast_vip    = "192.0.2.1"
+  bgp_prefix = "192.0.2.0/24"
+  bgp_vip    = "192.0.2.1"
   bgp_local_as   = 65001
   bgp_peer_as    = 65000
   bgp_peer_ip    = "203.0.113.254"

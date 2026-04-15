@@ -1,16 +1,16 @@
-# eBGP AnyCast
+# eBGP
 
 ## Overview
 
-AnyCast allows all ingress proxy nodes to advertise a shared IP prefix. BSV senders resolve the
-anycast address and are routed to the topologically nearest node by BGP best-path selection. This
+This feature allows all ingress proxy nodes to advertise a shared IP prefix. BSV senders resolve the
+shared address and are routed to the topologically nearest node by BGP best-path selection. This
 provides:
 
 - **Lowest-latency ingress** for senders without any application-level logic.
 - **Automatic failover** — if a node goes down, its BGP session drops and senders are rerouted.
 - **Horizontal scaling** — add more nodes, each announcing the same prefix.
 
-AnyCast is **optional**. Set `enable_bgp: false` (the default) to run without it.
+BGP is **optional**. Set `enable_bgp: false` (the default) to run without it.
 
 ---
 
@@ -21,13 +21,13 @@ enable_bgp: true
 
 bgp_daemon: bird2         # or: frr
 
-# IPv4 anycast (optional)
-anycast_prefix: "192.0.2.0/24"    # shared prefix announced by all nodes
-anycast_vip: "192.0.2.1"          # loopback VIP configured on each node
+# IPv4 BGP prefix (optional)
+bgp_prefix: "192.0.2.0/24"    # shared prefix announced by all nodes
+bgp_vip: "192.0.2.1"          # loopback VIP configured on each node
 
-# IPv6 anycast (optional)
-anycast_prefix6: "2001:db8::/48"  # shared IPv6 prefix announced by all nodes
-anycast_vip6: "2001:db8::1"       # IPv6 loopback VIP configured on each node
+# IPv6 BGP prefix (optional)
+bgp_prefix6: "2001:db8::/48"  # shared IPv6 prefix announced by all nodes
+bgp_vip6: "2001:db8::1"       # IPv6 loopback VIP configured on each node
 
 bgp_local_as: 65001               # ASN of this node
 bgp_peer_as: 65000                # upstream provider ASN
@@ -47,14 +47,14 @@ bgp_password: ""                  # optional MD5 session password
 
 Each node:
 
-1. Configures a loopback VIP (`anycast_vip`) from the anycast prefix.
+1. Configures a loopback VIP (`bgp_vip`) from `bgp_prefix`.
 2. Runs a BGP daemon (BIRD2 or FRR) that opens an eBGP session to the upstream provider.
-3. Announces `anycast_prefix` with `next-hop self`.
+3. Announces `bgp_prefix` with `next-hop self`.
 4. The service check (see below) withdraws the route if `bitcoin-shard-proxy` is unhealthy.
 
 ```text
-         anycast_prefix:  192.0.2.0/24   (IPv4)
-         anycast_prefix6: 2001:db8::/48  (IPv6)
+         bgp_prefix:  192.0.2.0/24   (IPv4)
+         bgp_prefix6: 2001:db8::/48  (IPv6)
 
 node-A (AS 65001) ──eBGP(v4+v6)──► provider (AS 65000) ──► BGP table ──► senders
 node-B (AS 65001) ──eBGP(v4+v6)──►                          (nearest wins)
@@ -83,22 +83,22 @@ protocol kernel {
 }
 
 # Separate static protocols per address family
-protocol static anycast4 {
+protocol static bgp4 {
   ipv4;
-  route {{ anycast_prefix }} blackhole;   # set when anycast_prefix is non-empty
+  route {{ bgp_prefix }} blackhole;   # set when bgp_prefix is non-empty
 }
 
-protocol static anycast6 {
+protocol static bgp6 {
   ipv6;
-  route {{ anycast_prefix6 }} blackhole;  # set when anycast_prefix6 is non-empty
+  route {{ bgp_prefix6 }} blackhole;  # set when bgp_prefix6 is non-empty
 }
 
 # Prefix-set filters (conditionally defined when the prefix var is set)
-define ANYCAST4_PFXS = [ {{ anycast_prefix }} ];
-filter export_anycast4 { if net ~ ANYCAST4_PFXS then accept; reject; }
+define BGP4_PFXS = [ {{ bgp_prefix }} ];
+filter export_bgp4 { if net ~ BGP4_PFXS then accept; reject; }
 
-define ANYCAST6_PFXS = [ {{ anycast_prefix6 }} ];
-filter export_anycast6 { if net ~ ANYCAST6_PFXS then accept; reject; }
+define BGP6_PFXS = [ {{ bgp_prefix6 }} ];
+filter export_bgp6 { if net ~ BGP6_PFXS then accept; reject; }
 
 filter accept_none { reject; }
 
@@ -107,14 +107,14 @@ protocol bgp upstream4 {
   local as {{ bgp_local_as }};
   neighbor {{ bgp_peer_ip }} as {{ bgp_peer_as }};  # only when bgp_peer_ip set
   ...
-  ipv4 { import filter accept_none; export filter export_anycast4; };
+  ipv4 { import filter accept_none; export filter export_bgp4; };
 }
 
 protocol bgp upstream6 {
   local as {{ bgp_local_as }};
   neighbor {{ bgp_peer_ip6 }} as {{ bgp_peer_as }}; # only when bgp_peer_ip6 set
   ...
-  ipv6 { import filter accept_none; export filter export_anycast6; };
+  ipv6 { import filter accept_none; export filter export_bgp6; };
 }
 ```
 
@@ -165,23 +165,23 @@ router bgp {{ bgp_local_as }}
  neighbor {{ bgp_peer_ip6 }} remote-as {{ bgp_peer_as }}  ! IPv6 peer (if set)
  !
  address-family ipv4 unicast
-  network {{ anycast_prefix }}
+  network {{ bgp_prefix }}
   neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
   neighbor {{ bgp_peer_ip }} route-map DENY in
  exit-address-family
  !
  address-family ipv6 unicast
-  network {{ anycast_prefix6 }}
+  network {{ bgp_prefix6 }}
   neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
   neighbor {{ bgp_peer_ip6 }} route-map DENY in
  exit-address-family
 !
-ip prefix-list ANYCAST4 seq 10 permit {{ anycast_prefix }}
-ipv6 prefix-list ANYCAST6 seq 10 permit {{ anycast_prefix6 }}
+ip prefix-list BGP4 seq 10 permit {{ bgp_prefix }}
+ipv6 prefix-list BGP6 seq 10 permit {{ bgp_prefix6 }}
 route-map EXPORT4 permit 10
- match ip address prefix-list ANYCAST4
+ match ip address prefix-list BGP4
 route-map EXPORT6 permit 10
- match ipv6 address prefix-list ANYCAST6
+ match ipv6 address prefix-list BGP6
 route-map DENY deny 10
 !
 ```
@@ -258,7 +258,7 @@ bgp_ibgp_peers:
   - { peer_ip: "10.0.1.3", peer_ip6: "fd00::3", description: "proxy-node-03" } # dual-stack
 ```
 
-The `bgp_local_as`, `anycast_prefix`, `anycast_prefix6`, `bgp_hold_time`, `bgp_keepalive`,
+The `bgp_local_as`, `bgp_prefix`, `bgp_prefix6`, `bgp_hold_time`, `bgp_keepalive`,
 and `bgp_password` variables are shared with the existing `bgp` role.
 
 ### BIRD2 iBGP session pattern
@@ -271,7 +271,7 @@ protocol bgp ibgp_0_v4 {
   local as 65001;
   neighbor 10.0.1.1 as 65001;   # same AS = iBGP
   ...
-  ipv4 { next hop self; import filter accept_none; export filter export_anycast4; };
+  ipv4 { next hop self; import filter accept_none; export filter export_bgp4; };
 }
 
 # Peer with peer_ip6 set
@@ -279,7 +279,7 @@ protocol bgp ibgp_0_v6 {
   local as 65001;
   neighbor fd00::3 as 65001;
   ...
-  ipv6 { next hop self; import filter accept_none; export filter export_anycast6; };
+  ipv6 { next hop self; import filter accept_none; export filter export_bgp6; };
 }
 ```
 
@@ -288,9 +288,9 @@ protocol bgp ibgp_0_v6 {
 ```frr
 router bgp 65001
  neighbor 10.0.1.1 remote-as 65001
- neighbor 10.0.1.1 update-source 192.0.2.1  ! if anycast_vip set
+ neighbor 10.0.1.1 update-source 192.0.2.1  ! if bgp_vip set
  neighbor fd00::3  remote-as 65001
- neighbor fd00::3  update-source 2001:db8::1 ! if anycast_vip6 set
+ neighbor fd00::3  update-source 2001:db8::1 ! if bgp_vip6 set
  !
  address-family ipv4 unicast
   network 192.0.2.0/24
@@ -329,7 +329,7 @@ added as a separate `bgp-ebgp` role at that time.
 
 | Playbook | Target group | Role | Purpose |
 |---|---|---|---|
-| `ansible/site.yml` | `ingress_nodes` | `bgp` (conditional) | eBGP anycast on ingress proxy nodes |
+| `ansible/site.yml` | `ingress_nodes` | `bgp` (conditional) | eBGP on ingress proxy nodes |
 | `ansible/bgp-ibgp.yml` | `bgp_ibgp_nodes` | `bgp-ibgp` | iBGP on upstream peer nodes |
 
 Run independently:
@@ -346,7 +346,7 @@ ansible-playbook -i inventory/hosts.yml bgp-ibgp.yml
 
 ## Loopback VIP
 
-The role configures `anycast_vip` on the loopback interface so the OS responds to it:
+The role configures `bgp_vip` on the loopback interface so the OS responds to it:
 
 ### Ubuntu
 
@@ -357,15 +357,15 @@ network:
   ethernets:
     lo:
       addresses:
-        - "{{ anycast_vip }}/32"    # IPv4 VIP (if anycast_vip set)
-        - "{{ anycast_vip6 }}/128"  # IPv6 VIP (if anycast_vip6 set)
+        - "{{ bgp_vip }}/32"    # IPv4 VIP (if bgp_vip set)
+        - "{{ bgp_vip6 }}/128"  # IPv6 VIP (if bgp_vip6 set)
 ```
 
 ### FreeBSD
 
 ```text
-ifconfig_lo0_alias0="inet {{ anycast_vip }} netmask 255.255.255.255"  # IPv4 VIP
-ifconfig_lo0_alias1="inet6 {{ anycast_vip6 }} prefixlen 128"          # IPv6 VIP
+ifconfig_lo0_alias0="inet {{ bgp_vip }} netmask 255.255.255.255"  # IPv4 VIP
+ifconfig_lo0_alias1="inet6 {{ bgp_vip6 }} prefixlen 128"          # IPv6 VIP
 ```
 
 ---

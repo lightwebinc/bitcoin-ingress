@@ -19,7 +19,7 @@ and run hands-off.
 
 ```text
 Internet / BSV senders
-        │  UDP (BRC-12 frames)
+        │  UDP / TCP (BRC-12/V2 frames)
         ▼
 ┌──────────────────────┐
 │  bitcoin-ingress     │  ← this repo manages deployment of these nodes
@@ -37,7 +37,7 @@ Internet / BSV senders
 └──────────────────────────────────────────────┘
 ```
 
-Optional eBGP AnyCast on the ingress interface advertises a shared anycast prefix from all proxy nodes,
+Optional eBGP on the ingress interface advertises a shared prefix from all proxy nodes,
 allowing senders to reach the nearest proxy automatically.
 
 See [docs/architecture.md](docs/architecture.md) for full topology detail.
@@ -56,7 +56,7 @@ See [docs/architecture.md](docs/architecture.md) for full topology detail.
 1. **Ansible** — see [docs/ansible.md](docs/ansible.md)
 2. **Terraform (generic)** — see [docs/terraform.md](docs/terraform.md)
 3. **Networking (GRE / ethernet)** — see [docs/networking.md](docs/networking.md)
-4. **eBGP AnyCast** — see [docs/bgp-anycast.md](docs/bgp-anycast.md)
+4. **eBGP** — see [docs/bgp.md](docs/bgp.md)
 5. **LXD / local lab** — see [docs/lxd-lab.md](docs/lxd-lab.md)
 
 ## Repository layout

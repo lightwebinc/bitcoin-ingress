@@ -1,5 +1,5 @@
 variable "enable_bgp" {
-  description = "Enable eBGP AnyCast"
+  description = "Enable eBGP"
   type        = bool
   default     = false
 }
@@ -15,26 +15,26 @@ variable "bgp_daemon" {
   }
 }
 
-variable "anycast_prefix" {
-  description = "IPv4 shared prefix announced by all nodes (e.g. '192.0.2.0/24')"
+variable "bgp_prefix" {
+  description = "IPv4 shared BGP prefix announced by all nodes (e.g. '192.0.2.0/24')"
   type        = string
   default     = ""
 }
 
-variable "anycast_vip" {
-  description = "IPv4 loopback VIP from the anycast prefix (e.g. '192.0.2.1')"
+variable "bgp_vip" {
+  description = "IPv4 loopback BGP VIP (e.g. '192.0.2.1')"
   type        = string
   default     = ""
 }
 
-variable "anycast_prefix6" {
-  description = "IPv6 shared prefix announced by all nodes (e.g. '2001:db8::/48')"
+variable "bgp_prefix6" {
+  description = "IPv6 shared BGP prefix announced by all nodes (e.g. '2001:db8::/48')"
   type        = string
   default     = ""
 }
 
-variable "anycast_vip6" {
-  description = "IPv6 loopback VIP from the anycast_prefix6 (e.g. '2001:db8::1')"
+variable "bgp_vip6" {
+  description = "IPv6 loopback BGP VIP (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }

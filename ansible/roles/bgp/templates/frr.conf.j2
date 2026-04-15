@@ -1,4 +1,4 @@
-! FRR configuration for bitcoin-ingress AnyCast — dual-stack
+! FRR configuration for bitcoin-ingress BGP — dual-stack
 ! Managed by Ansible — do not edit manually
 ! Ingress: dual-stack (IPv4 + IPv6)
 ! Fabric/egress: IPv6-only
@@ -22,35 +22,35 @@ router bgp {{ bgp_local_as }}
  neighbor {{ bgp_peer_ip6 }} password {{ bgp_password }}
 {% endif %}
 {% endif %}
-{% if bgp_peer_ip | length > 0 and anycast_prefix | length > 0 %}
+{% if bgp_peer_ip | length > 0 and bgp_prefix | length > 0 %}
  !
  address-family ipv4 unicast
-  network {{ anycast_prefix }}
+  network {{ bgp_prefix }}
   neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
   neighbor {{ bgp_peer_ip }} route-map DENY in
  exit-address-family
 {% endif %}
-{% if bgp_peer_ip6 | length > 0 and anycast_prefix6 | length > 0 %}
+{% if bgp_peer_ip6 | length > 0 and bgp_prefix6 | length > 0 %}
  !
  address-family ipv6 unicast
-  network {{ anycast_prefix6 }}
+  network {{ bgp_prefix6 }}
   neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
   neighbor {{ bgp_peer_ip6 }} route-map DENY in
  exit-address-family
 {% endif %}
 !
-{% if anycast_prefix | length > 0 %}
-ip prefix-list ANYCAST4 seq 10 permit {{ anycast_prefix }}
+{% if bgp_prefix | length > 0 %}
+ip prefix-list BGP4 seq 10 permit {{ bgp_prefix }}
 !
 route-map EXPORT4 permit 10
- match ip address prefix-list ANYCAST4
+ match ip address prefix-list BGP4
 !
 {% endif %}
-{% if anycast_prefix6 | length > 0 %}
-ipv6 prefix-list ANYCAST6 seq 10 permit {{ anycast_prefix6 }}
+{% if bgp_prefix6 | length > 0 %}
+ipv6 prefix-list BGP6 seq 10 permit {{ bgp_prefix6 }}
 !
 route-map EXPORT6 permit 10
- match ipv6 address prefix-list ANYCAST6
+ match ipv6 address prefix-list BGP6
 !
 {% endif %}
 route-map DENY deny 10

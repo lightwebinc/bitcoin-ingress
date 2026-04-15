@@ -105,27 +105,27 @@ variable "shard_bits" {
   default     = 8
 }
 
-# BGP / AnyCast
-variable "anycast_prefix" {
-  description = "IPv4 shared anycast prefix announced by all nodes"
+# BGP
+variable "bgp_prefix" {
+  description = "IPv4 shared BGP prefix announced by all nodes"
   type        = string
   default     = ""
 }
 
-variable "anycast_prefix6" {
-  description = "IPv6 shared anycast prefix announced by all nodes (e.g. '2001:db8::/48')"
+variable "bgp_prefix6" {
+  description = "IPv6 shared BGP prefix announced by all nodes (e.g. '2001:db8::/48')"
   type        = string
   default     = ""
 }
 
-variable "anycast_vip" {
-  description = "IPv4 loopback VIP from the anycast prefix"
+variable "bgp_vip" {
+  description = "IPv4 loopback BGP VIP"
   type        = string
   default     = ""
 }
 
-variable "anycast_vip6" {
-  description = "IPv6 loopback VIP from anycast_prefix6 (e.g. '2001:db8::1')"
+variable "bgp_vip6" {
+  description = "IPv6 loopback BGP VIP (e.g. '2001:db8::1')"
   type        = string
   default     = ""
 }
@@ -168,7 +168,7 @@ variable "bgp_peer_ip6" {
 }
 
 variable "enable_bgp" {
-  description = "Enable eBGP AnyCast"
+  description = "Enable eBGP"
   type        = bool
   default     = false
 }

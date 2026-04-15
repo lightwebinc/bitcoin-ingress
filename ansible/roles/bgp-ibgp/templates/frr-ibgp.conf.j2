@@ -1,6 +1,6 @@
-! FRR iBGP configuration for bitcoin-ingress AnyCast
+! FRR iBGP configuration for bitcoin-ingress BGP
 ! Managed by Ansible — do not edit manually
-! Role: upstream iBGP peer (same AS, advertises anycast prefix inward)
+! Role: upstream iBGP peer (same AS, advertises BGP prefix inward)
 !
 frr defaults traditional
 log syslog informational
@@ -12,8 +12,8 @@ router bgp {{ bgp_local_as }}
  neighbor {{ p.peer_ip }} remote-as {{ bgp_local_as }}
  neighbor {{ p.peer_ip }} description {{ p.description | default('ibgp-peer-' ~ loop.index0) }}-v4
  neighbor {{ p.peer_ip }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
-{% if anycast_vip | default('') | length > 0 %}
- neighbor {{ p.peer_ip }} update-source {{ anycast_vip }}
+{% if bgp_vip | default('') | length > 0 %}
+ neighbor {{ p.peer_ip }} update-source {{ bgp_vip }}
 {% endif %}
 {% if bgp_password | length > 0 %}
  neighbor {{ p.peer_ip }} password {{ bgp_password }}
@@ -23,18 +23,18 @@ router bgp {{ bgp_local_as }}
  neighbor {{ p.peer_ip6 }} remote-as {{ bgp_local_as }}
  neighbor {{ p.peer_ip6 }} description {{ p.description | default('ibgp-peer-' ~ loop.index0) }}-v6
  neighbor {{ p.peer_ip6 }} timers {{ bgp_keepalive }} {{ bgp_hold_time }}
-{% if anycast_vip6 | default('') | length > 0 %}
- neighbor {{ p.peer_ip6 }} update-source {{ anycast_vip6 }}
+{% if bgp_vip6 | default('') | length > 0 %}
+ neighbor {{ p.peer_ip6 }} update-source {{ bgp_vip6 }}
 {% endif %}
 {% if bgp_password | length > 0 %}
  neighbor {{ p.peer_ip6 }} password {{ bgp_password }}
 {% endif %}
 {% endif %}
 {% endfor %}
-{% if anycast_prefix | length > 0 %}
+{% if bgp_prefix | length > 0 %}
  !
  address-family ipv4 unicast
-  network {{ anycast_prefix }}
+  network {{ bgp_prefix }}
 {% for p in bgp_ibgp_peers %}
 {% if p.peer_ip | default('') | length > 0 %}
   neighbor {{ p.peer_ip }} next-hop-self
@@ -44,10 +44,10 @@ router bgp {{ bgp_local_as }}
 {% endfor %}
  exit-address-family
 {% endif %}
-{% if anycast_prefix6 | length > 0 %}
+{% if bgp_prefix6 | length > 0 %}
  !
  address-family ipv6 unicast
-  network {{ anycast_prefix6 }}
+  network {{ bgp_prefix6 }}
 {% for p in bgp_ibgp_peers %}
 {% if p.peer_ip6 | default('') | length > 0 %}
   neighbor {{ p.peer_ip6 }} next-hop-self
@@ -58,18 +58,18 @@ router bgp {{ bgp_local_as }}
  exit-address-family
 {% endif %}
 !
-{% if anycast_prefix | length > 0 %}
-ip prefix-list ANYCAST4 seq 10 permit {{ anycast_prefix }}
+{% if bgp_prefix | length > 0 %}
+ip prefix-list BGP4 seq 10 permit {{ bgp_prefix }}
 !
 route-map EXPORT4 permit 10
- match ip address prefix-list ANYCAST4
+ match ip address prefix-list BGP4
 !
 {% endif %}
-{% if anycast_prefix6 | length > 0 %}
-ipv6 prefix-list ANYCAST6 seq 10 permit {{ anycast_prefix6 }}
+{% if bgp_prefix6 | length > 0 %}
+ipv6 prefix-list BGP6 seq 10 permit {{ bgp_prefix6 }}
 !
 route-map EXPORT6 permit 10
- match ipv6 address prefix-list ANYCAST6
+ match ipv6 address prefix-list BGP6
 !
 {% endif %}
 route-map DENY deny 10
