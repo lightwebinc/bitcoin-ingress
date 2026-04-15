@@ -53,8 +53,10 @@ all:
     #     core-router-01:
     #       ansible_host: 10.0.0.1
     #       bgp_router_id: 10.0.0.1
-    #       bgp_prefix: "192.0.2.0/24"
-    #       bgp_prefix6: "2001:db8::/48"
+    #       bgp_prefix:
+    #         - "192.0.2.0/24"
+    #       bgp_prefix6:
+    #         - "2001:db8::/48"
     #       bgp_ibgp_peers:
     #         # v4-only peer
     #         - { peer_ip: "10.0.1.1", description: "proxy-node-01" }

@@ -25,7 +25,9 @@ router bgp {{ bgp_local_as }}
 {% if bgp_peer_ip | length > 0 and bgp_prefix | length > 0 %}
  !
  address-family ipv4 unicast
-  network {{ bgp_prefix }}
+{% for prefix in bgp_prefix %}
+  network {{ prefix }}
+{% endfor %}
   neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
   neighbor {{ bgp_peer_ip }} route-map DENY in
  exit-address-family
@@ -33,21 +35,27 @@ router bgp {{ bgp_local_as }}
 {% if bgp_peer_ip6 | length > 0 and bgp_prefix6 | length > 0 %}
  !
  address-family ipv6 unicast
-  network {{ bgp_prefix6 }}
+{% for prefix in bgp_prefix6 %}
+  network {{ prefix }}
+{% endfor %}
   neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
   neighbor {{ bgp_peer_ip6 }} route-map DENY in
  exit-address-family
 {% endif %}
 !
 {% if bgp_prefix | length > 0 %}
-ip prefix-list BGP4 seq 10 permit {{ bgp_prefix }}
+{% for prefix in bgp_prefix %}
+ip prefix-list BGP4 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
 !
 route-map EXPORT4 permit 10
  match ip address prefix-list BGP4
 !
 {% endif %}
 {% if bgp_prefix6 | length > 0 %}
-ipv6 prefix-list BGP6 seq 10 permit {{ bgp_prefix6 }}
+{% for prefix in bgp_prefix6 %}
+ipv6 prefix-list BGP6 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
 !
 route-map EXPORT6 permit 10
  match ipv6 address prefix-list BGP6

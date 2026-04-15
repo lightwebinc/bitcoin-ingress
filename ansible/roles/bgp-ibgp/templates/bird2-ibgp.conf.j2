@@ -21,7 +21,7 @@ protocol kernel {
 }
 
 {% if bgp_prefix | length > 0 %}
-define BGP4_PFXS = [ {{ bgp_prefix }} ];
+define BGP4_PFXS = [ {{ bgp_prefix | join(', ') }} ];
 filter export_bgp4 {
   if net ~ BGP4_PFXS then accept;
   reject;
@@ -29,12 +29,14 @@ filter export_bgp4 {
 
 protocol static bgp4 {
   ipv4;
-  route {{ bgp_prefix }} blackhole;
+{% for prefix in bgp_prefix %}
+  route {{ prefix }} blackhole;
+{% endfor %}
 }
 {% endif %}
 
 {% if bgp_prefix6 | length > 0 %}
-define BGP6_PFXS = [ {{ bgp_prefix6 }} ];
+define BGP6_PFXS = [ {{ bgp_prefix6 | join(', ') }} ];
 filter export_bgp6 {
   if net ~ BGP6_PFXS then accept;
   reject;
@@ -42,7 +44,9 @@ filter export_bgp6 {
 
 protocol static bgp6 {
   ipv6;
-  route {{ bgp_prefix6 }} blackhole;
+{% for prefix in bgp_prefix6 %}
+  route {{ prefix }} blackhole;
+{% endfor %}
 }
 {% endif %}
 

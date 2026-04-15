@@ -1,5 +1,5 @@
 variable "allocate_eips" {
-  description = "Allocate Elastic IPs for each instance (useful for stable or anycast addressing)"
+  description = "Allocate Elastic IPs for each instance (useful for stable BGP VIP addressing)"
   type        = bool
   default     = false
 }
@@ -107,15 +107,15 @@ variable "shard_bits" {
 
 # BGP
 variable "bgp_prefix" {
-  description = "IPv4 shared BGP prefix announced by all nodes"
-  type        = string
-  default     = ""
+  description = "IPv4 BGP prefixes announced by all nodes"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_prefix6" {
-  description = "IPv6 shared BGP prefix announced by all nodes (e.g. '2001:db8::/48')"
-  type        = string
-  default     = ""
+  description = "IPv6 BGP prefixes announced by all nodes (e.g. ['2001:db8::/48'])"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_vip" {

@@ -21,12 +21,14 @@ enable_bgp: true
 
 bgp_daemon: bird2         # or: frr
 
-# IPv4 BGP prefix (optional)
-bgp_prefix: "192.0.2.0/24"    # shared prefix announced by all nodes
+# IPv4 BGP prefixes (optional, list)
+bgp_prefix:
+  - "192.0.2.0/24"             # prefixes announced by all nodes
 bgp_vip: "192.0.2.1"          # loopback VIP configured on each node
 
-# IPv6 BGP prefix (optional)
-bgp_prefix6: "2001:db8::/48"  # shared IPv6 prefix announced by all nodes
+# IPv6 BGP prefixes (optional, list)
+bgp_prefix6:
+  - "2001:db8::/48"            # IPv6 prefixes announced by all nodes
 bgp_vip6: "2001:db8::1"       # IPv6 loopback VIP configured on each node
 
 bgp_local_as: 65001               # ASN of this node
@@ -49,7 +51,7 @@ Each node:
 
 1. Configures a loopback VIP (`bgp_vip`) from `bgp_prefix`.
 2. Runs a BGP daemon (BIRD2 or FRR) that opens an eBGP session to the upstream provider.
-3. Announces `bgp_prefix` with `next-hop self`.
+3. Announces all `bgp_prefix` entries with `next-hop self`.
 4. The service check (see below) withdraws the route if `bitcoin-shard-proxy` is unhealthy.
 
 ```text
@@ -85,19 +87,23 @@ protocol kernel {
 # Separate static protocols per address family
 protocol static bgp4 {
   ipv4;
-  route {{ bgp_prefix }} blackhole;   # set when bgp_prefix is non-empty
+{% for prefix in bgp_prefix %}
+  route {{ prefix }} blackhole;
+{% endfor %}
 }
 
 protocol static bgp6 {
   ipv6;
-  route {{ bgp_prefix6 }} blackhole;  # set when bgp_prefix6 is non-empty
+{% for prefix in bgp_prefix6 %}
+  route {{ prefix }} blackhole;
+{% endfor %}
 }
 
-# Prefix-set filters (conditionally defined when the prefix var is set)
-define BGP4_PFXS = [ {{ bgp_prefix }} ];
+# Prefix-set filters (one entry per prefix in the list)
+define BGP4_PFXS = [ {{ bgp_prefix | join(', ') }} ];
 filter export_bgp4 { if net ~ BGP4_PFXS then accept; reject; }
 
-define BGP6_PFXS = [ {{ bgp_prefix6 }} ];
+define BGP6_PFXS = [ {{ bgp_prefix6 | join(', ') }} ];
 filter export_bgp6 { if net ~ BGP6_PFXS then accept; reject; }
 
 filter accept_none { reject; }
@@ -165,19 +171,27 @@ router bgp {{ bgp_local_as }}
  neighbor {{ bgp_peer_ip6 }} remote-as {{ bgp_peer_as }}  ! IPv6 peer (if set)
  !
  address-family ipv4 unicast
-  network {{ bgp_prefix }}
+{% for prefix in bgp_prefix %}
+  network {{ prefix }}
+{% endfor %}
   neighbor {{ bgp_peer_ip }} route-map EXPORT4 out
   neighbor {{ bgp_peer_ip }} route-map DENY in
  exit-address-family
  !
  address-family ipv6 unicast
-  network {{ bgp_prefix6 }}
+{% for prefix in bgp_prefix6 %}
+  network {{ prefix }}
+{% endfor %}
   neighbor {{ bgp_peer_ip6 }} route-map EXPORT6 out
   neighbor {{ bgp_peer_ip6 }} route-map DENY in
  exit-address-family
 !
-ip prefix-list BGP4 seq 10 permit {{ bgp_prefix }}
-ipv6 prefix-list BGP6 seq 10 permit {{ bgp_prefix6 }}
+{% for prefix in bgp_prefix %}
+ip prefix-list BGP4 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
+{% for prefix in bgp_prefix6 %}
+ipv6 prefix-list BGP6 seq {{ (loop.index0 * 10) + 10 }} permit {{ prefix }}
+{% endfor %}
 route-map EXPORT4 permit 10
  match ip address prefix-list BGP4
 route-map EXPORT6 permit 10
@@ -243,7 +257,7 @@ the health-check script.
 ## iBGP
 
 The `bgp-ibgp` role (`roles/bgp-ibgp/`) configures iBGP sessions on **upstream peer nodes**
-(e.g. core routers) so they learn the anycast prefix from the ingress proxy nodes. It is run
+(e.g. core routers) so they learn the BGP prefixes from the ingress proxy nodes. It is run
 by the separate `ansible/bgp-ibgp.yml` playbook against the `bgp_ibgp_nodes` inventory group.
 
 ### Variables
@@ -258,7 +272,7 @@ bgp_ibgp_peers:
   - { peer_ip: "10.0.1.3", peer_ip6: "fd00::3", description: "proxy-node-03" } # dual-stack
 ```
 
-The `bgp_local_as`, `bgp_prefix`, `bgp_prefix6`, `bgp_hold_time`, `bgp_keepalive`,
+The `bgp_local_as`, `bgp_prefix` (list), `bgp_prefix6` (list), `bgp_hold_time`, `bgp_keepalive`,
 and `bgp_password` variables are shared with the existing `bgp` role.
 
 ### BIRD2 iBGP session pattern

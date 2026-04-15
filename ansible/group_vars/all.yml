@@ -65,10 +65,10 @@ gre_inner_ipv6: ""        # IPv6 address/prefix assigned inside the tunnel
 enable_bgp: false
 bgp_daemon: "bird2"           # bird2 | frr
 
-bgp_prefix: ""               # IPv4 BGP prefix announced by all nodes, e.g. "192.0.2.0/24"
-bgp_vip: ""                  # IPv4 loopback VIP from bgp_prefix, e.g. "192.0.2.1"
-bgp_prefix6: ""              # IPv6 BGP prefix announced by all nodes, e.g. "2001:db8::/48"
-bgp_vip6: ""                 # IPv6 loopback VIP from bgp_prefix6, e.g. "2001:db8::1"
+bgp_prefix: []               # IPv4 BGP prefixes announced by all nodes, e.g. ["192.0.2.0/24"]
+bgp_vip: ""                  # IPv4 loopback VIP, e.g. "192.0.2.1"
+bgp_prefix6: []              # IPv6 BGP prefixes announced by all nodes, e.g. ["2001:db8::/48"]
+bgp_vip6: ""                 # IPv6 loopback VIP, e.g. "2001:db8::1"
 
 bgp_local_as: 65001
 bgp_peer_as: 65000

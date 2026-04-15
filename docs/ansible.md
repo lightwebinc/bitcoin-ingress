@@ -106,9 +106,9 @@ All variables with defaults live in `group_vars/all.yml`.
 |-------------------|--------------|-------------------------------------------------|
 | `enable_bgp`      | `false`      | Enable eBGP                                     |
 | `bgp_daemon`      | `bird2`      | `bird2` or `frr`                                |
-| `bgp_prefix`      | `""`         | IPv4 shared BGP prefix announced by all nodes   |
+| `bgp_prefix`      | `[]`          | IPv4 BGP prefixes announced by all nodes (list) |
 | `bgp_vip`         | `""`         | IPv4 loopback BGP VIP                           |
-| `bgp_prefix6`     | `""`         | IPv6 shared BGP prefix announced by all nodes   |
+| `bgp_prefix6`     | `[]`          | IPv6 BGP prefixes announced by all nodes (list) |
 | `bgp_vip6`        | `""`         | IPv6 loopback BGP VIP                           |
 | `bgp_local_as`    | `65001`      | Local ASN                                       |
 | `bgp_peer_as`     | `65000`      | Upstream provider ASN                           |

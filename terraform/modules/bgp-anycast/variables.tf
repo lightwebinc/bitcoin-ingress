@@ -16,9 +16,9 @@ variable "bgp_daemon" {
 }
 
 variable "bgp_prefix" {
-  description = "IPv4 shared BGP prefix announced by all nodes (e.g. '192.0.2.0/24')"
-  type        = string
-  default     = ""
+  description = "IPv4 BGP prefixes announced by all nodes (e.g. ['192.0.2.0/24'])"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_vip" {
@@ -28,9 +28,9 @@ variable "bgp_vip" {
 }
 
 variable "bgp_prefix6" {
-  description = "IPv6 shared BGP prefix announced by all nodes (e.g. '2001:db8::/48')"
-  type        = string
-  default     = ""
+  description = "IPv6 BGP prefixes announced by all nodes (e.g. ['2001:db8::/48'])"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_vip6" {

@@ -119,15 +119,15 @@ variable "gre_remote_ip6" {
 
 # BGP configuration
 variable "bgp_prefix" {
-  description = "IPv4 shared BGP prefix announced by all nodes"
-  type        = string
-  default     = ""
+  description = "IPv4 BGP prefixes announced by all nodes"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_prefix6" {
-  description = "IPv6 shared BGP prefix announced by all nodes (e.g. '2001:db8::/48')"
-  type        = string
-  default     = ""
+  description = "IPv6 BGP prefixes announced by all nodes (e.g. ['2001:db8::/48'])"
+  type        = list(string)
+  default     = []
 }
 
 variable "bgp_vip" {
@@ -198,6 +198,6 @@ variable "enable_bgp" {
 
 variable "extra_ansible_vars" {
   description = "Additional Ansible variables to pass as --extra-vars"
-  type        = map(string)
+  type        = map(any)
   default     = {}
 }

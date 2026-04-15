@@ -184,5 +184,5 @@ tcp_listen_port: 0        # TCP ingress for reliable delivery (0 = disabled)
 Both transports share the same forwarding pipeline; they can run simultaneously. Enable TCP by setting
 `tcp_listen_port` to a non-zero port value.
 
-If eBGP is enabled, the ingress interface IP (or anycast VIP) is announced via BGP.
+If eBGP is enabled, the ingress interface IP (or BGP VIP) is announced via BGP.
 See [bgp.md](bgp.md).
