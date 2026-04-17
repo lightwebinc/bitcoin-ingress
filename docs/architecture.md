@@ -36,9 +36,14 @@ and individually replaceable.
                         └────┬──────────┬──────────┬──────────────┘
                              │          │          │
                         ┌────▼──┐  ┌────▼──┐  ┌────▼──┐
-                        │miners │  │exch-  │  │other  │   ← multicast subscribers
+                        │miners │  │exch-  │  │other  │   ← direct multicast subscribers
                         │       │  │anges  │  │SVPs   │     (join shard groups)
-                        └───────┘  └───────┘  └───────┘
+                        └───────┘  └───────┘  └───┬───┘
+                                                   │  bitcoin-shard-listener
+                                              ┌────▼──────────────┐
+                                              │ downstream unicast │   ← filtered + forwarded
+                                              │ consumers          │     over UDP or TCP
+                                              └───────────────────┘
 ```
 
 ## Shard key and multicast group derivation
@@ -55,11 +60,25 @@ by 1 splits each existing group into two children — existing joins remain vali
 
 In addition to using a fixed number of shards, we can further divide traffic flows into subtree-flows using subtree identifiers set by miners and transaction processors. This allows for more flexible sharding and can be used to shard by transaction type, specialty, or other criteria. The details of this mechanism are still being worked out, particularly the deterministic mapping of the 32 byte subtree identifier to multicast group address scheme. The V2 frame format includes a field for the subtree ID already.
 
-## Sequence numbering
+## Sequence numbering and SenderID
 
-The V2 frame format includes a sequence number field that can be used to track the order of transactions within a shard. This can be used by receivers to detect missing transactions and request retransmission. It is still yet to be determined if this field should be set only by the transmission originator (i.e. miners, transaction processors, infrastructure services, exchanges, etc.) or if it should be set by the ingress node in the case that an originator leaves this field blank, or uses the standard BRC-12 transaction format without these fields.
+The V2 frame format includes a sequence number field (`ShardSeqNum`) and a
+`SenderID` field for tracking the order of transactions within a shard per
+originating sender.
 
-The sequence numbering needs to be monotonic. This introduces potential complexity in coordination among proxy workers on a single system, and also between proxy systems.
+**ShardSeqNum (bytes 40–47):** a per-sender monotonic counter assigned by the
+BSV sender. `0` means unset. Sequence numbering must be monotonic; coordination
+among proxy workers or between proxy nodes is not required because the proxy
+forwards the sender's value unchanged.
+
+**SenderID (bytes 80–95):** the original BSV sender's IP address, stamped
+in-place by the ingress proxy as a 16-byte `net.IP.To16()` value. IPv6 sources
+are stored natively; IPv4 sources produce the IPv4-mapped form
+(`::ffff:a.b.c.d`). This enables per-sender gap tracking at the receiver
+(`bitcoin-shard-listener`) without requiring any coordination at the proxy tier.
+
+Gap detection and retransmission requests (NACK) are the responsibility of the
+receiver (`bitcoin-shard-listener`), not the proxy.
 
 ## BGP ingress (optional)
 
